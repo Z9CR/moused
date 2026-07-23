@@ -1,6 +1,13 @@
 #include <adapter.hpp>
 #include <linux.hpp>
 #include <definitions.hpp>
+#include <fcntl.h>
+#include <stdio.h>
+#include <linux/input.h>
+#include <libevdev-1.0/libevdev/libevdev.h>
+#include <libevdev-1.0/libevdev/libevdev-uinput.h>
+
+
 
 
 /// @brief translate cursor
@@ -33,7 +40,7 @@ void mouse::move_to(unsigned int x, unsigned int y) {
 
 /// @brief click the `btn`
 void mouse::click(mouse_btns btn) {
-
+    
 }
 
 /// @brief press the `btn`

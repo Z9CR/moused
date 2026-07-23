@@ -3,7 +3,9 @@
 #include <definitions.hpp>
 #include <config.hpp>
 #include <Windows.h>
-#include <math.h>
+#include <cmath>
+
+constexpr double PI = 3.14159265358979323846;
 
 enum axis {
     X = 0,
@@ -55,16 +57,10 @@ void mouse::translate(angle a, int distant, unsigned int time_ms) {
         while (a += 360.0, a >= -360.0) {}
     
     // dst?'s unit: px
-    int dstx{};
-    int dsty{};
-    if (a >= 0) {
-        dstx = cur.x + cos(a) * distant;
-        dsty = cur.y + sin(a) * distant;
-    }
-    else {
-        dstx = cur.x + cos(-1 * a) * distant;
-        dsty = cur.y - sin(-1 * a) * distant;
-    }
+    // convert angle from degrees to radians
+    double rad = a * PI / 180.0;
+    int dstx = cur.x + static_cast<int>(cos(rad) * distant);
+    int dsty = cur.y + static_cast<int>(sin(rad) * distant);
     mouse::move_to(dstx, dsty, time_ms);
 }
 
@@ -87,16 +83,10 @@ void mouse::translate(angle a, int distant) {
         while (a += 360.0, a >= -360.0) {}
     
     // dst?'s unit: px
-    int dstx{};
-    int dsty{};
-    if (a >= 0) {
-        dstx = cur.x + cos(a) * distant;
-        dsty = cur.y + sin(a) * distant;
-    }
-    else {
-        dstx = cur.x + cos(-1 * a) * distant;
-        dsty = cur.y - sin(-1 * a) * distant;
-    }
+    // convert angle from degrees to radians
+    double rad = a * PI / 180.0;
+    int dstx = cur.x + static_cast<int>(cos(rad) * distant);
+    int dsty = cur.y + static_cast<int>(sin(rad) * distant);
     mouse::move_to(dstx, dsty);
 }
 

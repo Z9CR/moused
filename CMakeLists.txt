@@ -1,3 +1,7 @@
+#
+# to compile it on linux, you need package `pkg-config`, `libevdev-dev`
+#
+
 cmake_minimum_required(VERSION 4.2)
 project(moused CXX)
 set(CMAKE_CXX_STANDARD 26)
@@ -19,6 +23,12 @@ if(WIN32)
 elseif(APPLE)
     set(PLATFORM_SOURCES src/mac.cpp)
 elseif(LINUX)
+    # 1. Find the PkgConfig tool
+    find_package(PkgConfig REQUIRED)
+
+    # 2. Search for the libevdev module and create an imported target
+    pkg_check_modules(LIBEVDEV REQUIRED IMPORTED_TARGET libevdev)
+
     set(PLATFORM_SOURCES src/linux.cpp)
 elseif(BSD)
     set(PLATFORM_SOURCES src/bsd.cpp)
@@ -26,3 +36,7 @@ endif()
 
 add_executable(moused ${COMMON_SOURCES} ${PLATFORM_SOURCES} ${INCLUDES})
 target_include_directories(moused PRIVATE ${INCLUDES_DIR})
+
+if(LINUX) 
+    target_link_libraries(moused PRIVATE PkgConfig::LIBEVDEV)
+endif()
