@@ -1,6 +1,6 @@
 #pragma once
 
-constexpr enum mouse_btns {
+enum mouse_btns {
     LMB = 0, // MB1 in windows.h
     RMB = 1, // MB2 in windows.h
     MMB = 2, // MB3 in windows.h
@@ -8,7 +8,7 @@ constexpr enum mouse_btns {
     XB2 = 4  // MB5 in windows.h
 };
 
-constexpr enum wheel_rotations {
+enum wheel_rotations {
     WU = 0, // WheelUp
     WD = 1  // WheelDown
 };
@@ -22,4 +22,4 @@ constexpr enum wheel_rotations {
 * if angle > 0,
 * it will point to the direction CCW rotate `angle` degs from x+
 */
-using angle = double;
+typedef double angle;
