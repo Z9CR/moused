@@ -20,6 +20,16 @@ void mouse_click(mouse_btns btn) {
 
 }
 
+/// @brief press the `btn`
+void mouse_press(mouse_btns btn) {
+    
+}
+
+/// @brief release the pressed `btn`
+void mouse_release(mouse_btns btn) {
+
+}
+
 /// @brief routate the MMB for `scale`*Delta
 void mouse_wheel(wheel_rotations rotation, uf64 scale) {
     

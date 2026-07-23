@@ -1,7 +1,7 @@
 #pragma once
 
 constexpr enum direction {
-    // Raylib coordinate sys
+    // Raylib/win32 coordinate sys
     left = 0, // x-
     right = 1,// x+
     up = 2,   // y-
