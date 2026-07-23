@@ -14,17 +14,24 @@
 /// @brief move the mouse with direction and distance
 /// @param d: the direction
 /// @param distance: how many PXs you want to move
-void mouse_translate(direction d, int distance) {
+void mouse::translate(direction d, int distance) {
 
 }
 
 /// @brief move the mouse to (x, y) (right = x+, down = y +)
-void mouse_move_to(int x, int y) {
-
+/// @param x: how many PXs away from left boarder
+/// @param y: how many PXs away from up boarder
+void mouse::move_to(int x, int y) {
+    INPUT input{};
+    input.type = INPUT_MOUSE;
+    input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+    input.mi.dx = MulDiv(x, 65535, GetSystemMetrics(SM_CXSCREEN) - 1);
+    input.mi.dy = MulDiv(y, 65535, GetSystemMetrics(SM_CYSCREEN) - 1);
+    SendInput(1, &input, sizeof(INPUT));
 }
 
 /// @brief click the `btn`
-void mouse_click(mouse_btns btn) {
+void mouse::click(mouse_btns btn) {
     INPUT inputs[2]{};  // 2 event in need
     inputs[0].type = INPUT_MOUSE;
     inputs[1].type = INPUT_MOUSE;
@@ -61,7 +68,7 @@ void mouse_click(mouse_btns btn) {
 }
 
 /// @brief press the `btn`
-void mouse_press(mouse_btns btn) {
+void mouse::press(mouse_btns btn) {
     INPUT input{};
     input.type = INPUT_MOUSE;
     switch (btn) {
@@ -87,7 +94,7 @@ void mouse_press(mouse_btns btn) {
 }
 
 /// @brief release the pressed `btn`
-void mouse_release(mouse_btns btn) {
+void mouse::release(mouse_btns btn) {
     INPUT input{};
     input.type = INPUT_MOUSE;
     switch (btn) {
@@ -113,6 +120,6 @@ void mouse_release(mouse_btns btn) {
 }
 
 /// @brief routate the MMB for `scale`*Delta
-void mouse_wheel(wheel_rotations rotation, uf64 scale) {
+void mouse::wheel(wheel_rotations rotation, uf64 scale) {
     
 }
