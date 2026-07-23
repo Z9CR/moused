@@ -47,6 +47,6 @@ void mouse::release(mouse_btns btn) {
 }
 
 /// @brief routate the MMB for `scale`*Delta
-void mouse::wheel(wheel_rotations rotation, uf64 scale) {
+void mouse::wheel(wheel_rotations rotation, double scale) {
     
 }

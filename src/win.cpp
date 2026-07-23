@@ -237,6 +237,12 @@ void mouse::release(mouse_btns btn) {
 }
 
 /// @brief routate the MMB for `scale`*Delta
-void mouse::wheel(wheel_rotations rotation, uf64 scale) {
-    
+void mouse::wheel(wheel_rotations rotation, double scale) {
+    if(scale == 0.0) return;
+    INPUT input{};
+    input.type = INPUT_MOUSE;
+    input.mi.dwFlags = MOUSEEVENTF_WHEEL;
+    int delta = static_cast<int>(WHEEL_DELTA * scale);
+    input.mi.mouseData = (rotation == WU) ? delta : -delta;
+    SendInput(1, &input, sizeof(INPUT));
 }

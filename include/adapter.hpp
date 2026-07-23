@@ -37,5 +37,5 @@ public:
     static void release(mouse_btns btn);
 
     /// @brief routate the MMB for `scale`*Delta
-    static void wheel(wheel_rotations rotation, uf64 scale);
+    static void wheel(wheel_rotations rotation, double scale);
 };

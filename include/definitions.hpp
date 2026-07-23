@@ -13,8 +13,6 @@ constexpr enum wheel_rotations {
     WD = 1  // WheelDown
 };
 
-/// provide unsigned f64 macro to require dev provides a unsigned val
-using uf64 = double;
 
 /* if angle = 0, 
 * it will point to x+ direction
