@@ -67,6 +67,8 @@ void mouse::move_to(unsigned int x, unsigned int y, unsigned int time_ms) {
 
         Sleep(smoothmv_frametime);
     }
+    // in case float deviation
+    mouse::move_to(x, y);
 }
 
 /// @brief move the mouse to (x, y) (right = x+, down = y +)
