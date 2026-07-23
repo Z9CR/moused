@@ -1,13 +1,5 @@
 #pragma once
 
-constexpr enum direction {
-    // Raylib/win32 coordinate sys
-    left = 0, // x-
-    right = 1,// x+
-    up = 2,   // y-
-    down = 3  // y+
-};
-
 constexpr enum mouse_btns {
     LMB = 0, // MB1 in windows.h
     RMB = 1, // MB2 in windows.h
@@ -23,3 +15,8 @@ constexpr enum wheel_rotations {
 
 /// provide unsigned f64 macro to require dev provides a unsigned val
 using uf64 = double;
+
+/// if angel = 0, it points to x- direction(up in physical world)
+/// if it > 0, it points to the direction CW rotated `angel` degrees from x- direction
+/// if it < 0, it points to the direction CCW rotated `angel` degrees from x- direction
+using angel = double;

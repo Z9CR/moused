@@ -3,17 +3,19 @@
 #include <definitions.hpp>
 
 
-/// @brief move the mouse with direction and distance
-/// @param d: the direction
-/// @param distance: how many PXs you want to move
-void mouse::translate(direction d, int distance) {
 
+
+/// @brief move the mouse to (x, y) (right = x+, down = y +)
+/// @param x: how many PXs away from left boarder
+/// @param y: how many PXs away from up boarder
+void mouse::move_to(unsigned int x, unsigned int y, unsigned int time_ms) {
+    
 }
 
 /// @brief move the mouse to (x, y) (right = x+, down = y +)
 /// @param x: how many PXs away from left boarder
 /// @param y: how many PXs away from up boarder
-void mouse::move_to(int x, int y) {
+void mouse::move_to(unsigned int x, unsigned int y) {
 
 }
 

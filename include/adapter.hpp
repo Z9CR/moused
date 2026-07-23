@@ -7,15 +7,15 @@
 class mouse
 {
 public:
-    /// @brief move the mouse with direction and distance
-    /// @param d: the direction
-    /// @param distance: how many PXs you want to move
-    static void translate(direction d, int distance);
+    /// @brief move the mouse to (x, y) (right = x+, down = y +)
+    /// @param x: how many PXs away from left boarder
+    /// @param y: how many PXs away from up boarder
+    static void move_to(unsigned int x, unsigned int y, unsigned int time_ms);
 
     /// @brief move the mouse to (x, y) (right = x+, down = y +)
     /// @param x: how many PXs away from left boarder
     /// @param y: how many PXs away from up boarder
-    static void move_to(int x, int y);
+    static void move_to(unsigned int x, unsigned int y);
 
     /// @brief click the `btn`
     static void click(mouse_btns btn);

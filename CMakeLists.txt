@@ -13,7 +13,7 @@ foreach(dir ${INCLUDES_DIR})
 endforeach()
 
 # platform-specific sources
-set(COMMON_SOURCES src/main.cpp)
+set(COMMON_SOURCES src/main.cpp src/config.cpp)
 if(WIN32)
     set(PLATFORM_SOURCES src/win.cpp)
 elseif(APPLE)
