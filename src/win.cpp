@@ -25,10 +25,10 @@ void mouse_move_to(int x, int y) {
 
 /// @brief click the `btn`
 void mouse_click(mouse_btns btn) {
-    INPUT inputs[2] = {};  // 2 event in need
+    INPUT inputs[2]{};  // 2 event in need
     inputs[0].type = INPUT_MOUSE;
     inputs[1].type = INPUT_MOUSE;
-    DWORD down_flag, up_flag;
+    DWORD down_flag{}, up_flag{};
     switch (btn) {
         case LMB:
             down_flag = MOUSEEVENTF_LEFTDOWN;
@@ -54,19 +54,62 @@ void mouse_click(mouse_btns btn) {
             inputs[0].mi.mouseData = XBUTTON2;
             inputs[1].mi.mouseData = XBUTTON2;
             break;
-    }
+    };
     inputs[0].mi.dwFlags = down_flag;
     inputs[1].mi.dwFlags = up_flag;
     SendInput(2, inputs, sizeof(INPUT));
 }
+
 /// @brief press the `btn`
 void mouse_press(mouse_btns btn) {
-
+    INPUT input{};
+    input.type = INPUT_MOUSE;
+    switch (btn) {
+        case LMB:
+            input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+            break;
+        case RMB:
+            input.mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
+            break;
+        case MMB:
+            input.mi.dwFlags = MOUSEEVENTF_MIDDLEDOWN;
+            break;
+        case XB1:
+            input.mi.dwFlags = MOUSEEVENTF_XDOWN;
+            input.mi.mouseData = XBUTTON1;
+            break;
+        case XB2:
+            input.mi.dwFlags = MOUSEEVENTF_XDOWN;
+            input.mi.mouseData = XBUTTON2;
+            break;
+    };
+    SendInput(1, &input, sizeof(INPUT));
 }
 
 /// @brief release the pressed `btn`
 void mouse_release(mouse_btns btn) {
-
+    INPUT input{};
+    input.type = INPUT_MOUSE;
+    switch (btn) {
+        case LMB:
+            input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+            break;
+        case RMB:
+            input.mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+            break;
+        case MMB:
+            input.mi.dwFlags = MOUSEEVENTF_MIDDLEUP;
+            break;
+        case XB1:
+            input.mi.dwFlags = MOUSEEVENTF_XUP;
+            input.mi.mouseData = XBUTTON1;
+            break;
+        case XB2:
+            input.mi.dwFlags = MOUSEEVENTF_XUP;
+            input.mi.mouseData = XBUTTON2;
+            break;
+    };
+    SendInput(1, &input, sizeof(INPUT));
 }
 
 /// @brief routate the MMB for `scale`*Delta
