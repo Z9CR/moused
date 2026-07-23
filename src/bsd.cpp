@@ -3,6 +3,19 @@
 #include <definitions.hpp>
 
 
+/// @brief translate cursor
+/// @param a the angle away from x-
+/// @param distant how many PXs will cursor translate
+void mouse::translate(angle a, int distant, unsigned int time_ms) {
+    
+}
+
+/// @brief translate cursor
+/// @param a the angle away from x-
+/// @param distant how many PXs will cursor translate
+void mouse::translate(angle a, int distant) {
+
+}
 
 /// @brief move the mouse to (x, y) (right = x+, down = y +)
 /// @param x: how many PXs away from left boarder

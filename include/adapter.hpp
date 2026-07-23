@@ -7,6 +7,16 @@
 class mouse
 {
 public:
+    /// @brief translate cursor
+    /// @param a the angle away from x-
+    /// @param distant how many PXs will cursor translate
+    static void translate(angle a, int distant);
+
+    /// @brief translate cursor
+    /// @param a the angle away from x-
+    /// @param distant how many PXs will cursor translate
+    static void translate(angle a, int distant, unsigned int time_ms);
+
     /// @brief move the mouse to (x, y) (right = x+, down = y +)
     /// @param x: how many PXs away from left boarder
     /// @param y: how many PXs away from up boarder

@@ -3,6 +3,7 @@
 #include <definitions.hpp>
 #include <config.hpp>
 #include <Windows.h>
+#include <math.h>
 
 enum axis {
     X = 0,
@@ -35,7 +36,69 @@ int pos2px(int pos, axis d) {
 //  (0, 65535)-------(65535, 65535)
 //  y+
     
+/// @brief translate cursor
+/// @param a the angle away from x-
+/// @param distant how many PXs will cursor translate
+void mouse::translate(angle a, int distant, unsigned int time_ms) {
+    // get the cursor
+    // cur.?'s unit: px
+    POINT cur;
+    GetCursorPos(&cur);
+    // use Trigonometric funcs to calculate the dest
+    // if cur = (x, y), 
+    // the dst will = ()
+    // a may >= 360 || <= -360, so we need mod it
+    // we cant % a double(angle), so deal with it by a loop
+    if (a >= 360.0) 
+        while (a -= 360.0, a >= 360.0) {}
+    if (a <= -360.0) 
+        while (a += 360.0, a >= -360.0) {}
+    
+    // dst?'s unit: px
+    int dstx{};
+    int dsty{};
+    if (a >= 0) {
+        dstx = cur.x + cos(a) * distant;
+        dsty = cur.y + sin(a) * distant;
+    }
+    else {
+        dstx = cur.x + cos(-1 * a) * distant;
+        dsty = cur.y - sin(-1 * a) * distant;
+    }
+    mouse::move_to(dstx, dsty, time_ms);
+}
 
+/// @brief translate cursor
+/// @param a the angle away from x+
+/// @param distant how many PXs will cursor translate
+void mouse::translate(angle a, int distant) {
+    // get the cursor
+    // cur.?'s unit: px
+    POINT cur;
+    GetCursorPos(&cur);
+    // use Trigonometric funcs to calculate the dest
+    // if cur = (x, y), 
+    // the dst will = ()
+    // a may >= 360 || <= -360, so we need mod it
+    // we cant % a double(angle), so deal with it by a loop
+    if (a >= 360.0) 
+        while (a -= 360.0, a >= 360.0) {}
+    if (a <= -360.0) 
+        while (a += 360.0, a >= -360.0) {}
+    
+    // dst?'s unit: px
+    int dstx{};
+    int dsty{};
+    if (a >= 0) {
+        dstx = cur.x + cos(a) * distant;
+        dsty = cur.y + sin(a) * distant;
+    }
+    else {
+        dstx = cur.x + cos(-1 * a) * distant;
+        dsty = cur.y - sin(-1 * a) * distant;
+    }
+    mouse::move_to(dstx, dsty);
+}
 
 /// @brief move the mouse to (x, y) (right = x+, down = y +)
 /// @param x: how many PXs away from left boarder

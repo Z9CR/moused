@@ -16,7 +16,12 @@ constexpr enum wheel_rotations {
 /// provide unsigned f64 macro to require dev provides a unsigned val
 using uf64 = double;
 
-/// if angel = 0, it points to x- direction(up in physical world)
-/// if it > 0, it points to the direction CW rotated `angel` degrees from x- direction
-/// if it < 0, it points to the direction CCW rotated `angel` degrees from x- direction
-using angel = double;
+/* if angle = 0, 
+* it will point to x+ direction
+* which is the right direction in physical world
+* if angle > 0,
+* it will point to the direction CW rotate `angle` degs from x+
+* if angle > 0,
+* it will point to the direction CCW rotate `angle` degs from x+
+*/
+using angle = double;
