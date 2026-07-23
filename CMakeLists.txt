@@ -5,13 +5,6 @@ set(CMAKE_CXX_STANDARD 26)
 set(SOURCES_DIR src)
 set(INCLUDES_DIR include)
 
-# gather source files
-set(SOURCES "")
-foreach(dir ${SOURCES_DIR})
-    file(GLOB dir_sources ${dir}/*.c ${dir}/*.cpp)
-    list(APPEND SOURCES ${dir_sources})
-endforeach()
-
 # gather head files
 set(INCLUDES "")
 foreach(dir ${INCLUDES_DIR})
@@ -19,7 +12,17 @@ foreach(dir ${INCLUDES_DIR})
     list(APPEND INCLUDES ${dir_includes})
 endforeach()
 
-message(${SOURCES_DIR})
-message(${INCLUDES_DIR})
-add_executable(moused ${SOURCES} ${INCLUDES})
+# platform-specific sources
+set(COMMON_SOURCES src/main.cpp)
+if(WIN32)
+    set(PLATFORM_SOURCES src/win.cpp)
+elseif(APPLE)
+    set(PLATFORM_SOURCES src/mac.cpp)
+elseif(linux)
+    set(PLATFORM_SOURCES src/linux.cpp)
+elseif(BSD)
+    set(PLATFORM_SOURCES src/bsd.cpp)
+endif()
+
+add_executable(moused ${COMMON_SOURCES} ${PLATFORM_SOURCES} ${INCLUDES})
 target_include_directories(moused PRIVATE ${INCLUDES_DIR})

@@ -1,5 +1,6 @@
-#include <stdio.h>
+#include <definitions.hpp>
+#include <adapter.hpp>
 
 int main() {
-    puts("test");
+    
 }
