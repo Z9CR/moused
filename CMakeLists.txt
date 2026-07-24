@@ -19,12 +19,6 @@ if(WIN32)
 elseif(APPLE)
     set(PLATFORM_SOURCES src/mac.cpp)
 elseif(LINUX)
-    # 1. Find the PkgConfig tool
-    find_package(PkgConfig REQUIRED)
-
-    # 2. Search for the libevdev module and create an imported target
-    pkg_check_modules(LIBEVDEV REQUIRED IMPORTED_TARGET libevdev)
-
     set(PLATFORM_SOURCES src/linux.cpp)
 elseif(BSD)
     set(PLATFORM_SOURCES src/bsd.cpp)
