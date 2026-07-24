@@ -26,7 +26,3 @@ endif()
 
 add_executable(moused ${COMMON_SOURCES} ${PLATFORM_SOURCES} ${INCLUDES})
 target_include_directories(moused PRIVATE ${INCLUDES_DIR})
-
-if(LINUX) 
-    target_link_libraries(moused PRIVATE PkgConfig::LIBEVDEV)
-endif()
