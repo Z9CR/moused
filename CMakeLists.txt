@@ -1,7 +1,3 @@
-#
-# to compile it on linux, you need package `pkg-config`, `libevdev-dev`
-#
-
 cmake_minimum_required(VERSION 4.2)
 project(moused CXX)
 set(CMAKE_CXX_STANDARD 26)
