@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+  "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+  "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+
+<policyconfig>
+  <vendor>moused</vendor>
+  <vendor_url>https://github.com/Z9CR/moused</vendor_url>
+
+  <action id="com.moused.program.exec">
+    <description>Run moused as root</description>
+    <description xml:lang="zh_CN">以 root 权限运行 moused</description>
+    <message>Authentication is required to run moused (needs access to /dev/uinput or /dev/wsmouse)</message>
+    <message xml:lang="zh_CN">运行 moused 需要认证（需要访问 /dev/uinput 或 /dev/wsmouse）</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+  </action>
+</policyconfig>
