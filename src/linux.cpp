@@ -1,5 +1,4 @@
 #include <adapter.hpp>
-#include <linux.hpp>
 #include <definitions.hpp>
 #include <config.hpp>
 #include <cmath>

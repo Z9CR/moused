@@ -1,5 +1,4 @@
 #include <adapter.hpp>
-#include <mac.hpp>
 #include <definitions.hpp>
 
 

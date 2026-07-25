@@ -1,5 +1,4 @@
 #include <adapter.hpp>
-#include <win.hpp>
 #include <definitions.hpp>
 #include <config.hpp>
 #include <Windows.h>
