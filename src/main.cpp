@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <definitions.hpp>
 #include <adapter.hpp>
+#include <ui.hpp>
 
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
 #include <unistd.h>

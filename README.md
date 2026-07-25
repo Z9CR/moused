@@ -5,5 +5,5 @@ Moused aims to be a crossplatform Mouse Macro program, and now it had done windo
 1. windows: done
 2. linux: done
 3. GUI control panel: ongoing
-3. bsd haven't: start now
-4. macos haven't: start now
+3. bsd: haven't start now
+4. macos: haven't start now
