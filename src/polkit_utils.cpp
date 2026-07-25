@@ -1,6 +1,7 @@
 #include <polkit_utils.hpp>
 // avoid errors on win
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+#include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -28,7 +29,7 @@ static const char *get_exe_path(const char *argv0)
 }
 
 // the program must have privilege in Linux and BSDs to RW /dev/uinput(Linux) or /dev/wsmouse(BSDs)
-void polkit_root_getter()
+void polkit_root_getter(int argc, char* argv[])
 {
     if (geteuid() != 0)
     {
@@ -40,7 +41,7 @@ void polkit_root_getter()
         // fallback: suggest manual sudo/doas
         fprintf(stderr, "moused: root required (need write access to /dev/uinput).\n");
         fprintf(stderr, "  polkit elevation failed — run with: sudo moused\n");
-        return 1;
+        exit(1);
     }
     (void)argc;
     (void)argv;

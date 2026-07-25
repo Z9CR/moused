@@ -18,7 +18,7 @@
 int main(int argc, char *argv[])
 {
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
-    polkit_root_getter()
+    polkit_root_getter(argc, argv);
 #endif
     
     return 0;

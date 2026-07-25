@@ -10,7 +10,7 @@
 // static const char *get_exe_path(const char *argv0);
 
 // the program must have privilege in Linux and BSDs to RW /dev/uinput(Linux) or /dev/wsmouse(BSDs)
-void polkit_root_getter();
+void polkit_root_getter(int argc, char* argv[]);
 
 #endif
 #endif
