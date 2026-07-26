@@ -1,5 +1,4 @@
 #include <adapter.hpp>
-#include <definitions.hpp>
 
 
 /// @brief translate cursor

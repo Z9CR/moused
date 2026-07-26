@@ -1,5 +1,4 @@
 #include <adapter.hpp>
-#include <definitions.hpp>
 #include <config.hpp>
 #include <cmath>
 #include <cstdio>
@@ -10,6 +9,9 @@
 #include <linux/fb.h>
 #include <linux/input.h>
 #include <linux/uinput.h>
+
+using mouse::mouse_btns;
+using mouse::wheel_rotations;
 
 constexpr double PI = 3.14159265358979323846;
 

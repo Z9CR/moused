@@ -1,4 +1,3 @@
-#include <definitions.hpp>
 #include <adapter.hpp>
 #include <ui.hpp>
 #include <config.hpp>
