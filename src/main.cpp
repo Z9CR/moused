@@ -25,8 +25,12 @@ int main(int argc, char *argv[])
 #endif
     // `mw` stands for `mainwindow`
     auto mw = MainWindow::create();
+    auto tray = Tray::create();
+    auto window_weak = slint::ComponentWeakHandle(mw);
     mw->set_mainwindow_height(mainwindow_height);
     mw->set_mainwindow_width(mainwindow_width);
-    mw->run();
+    mw->show();
+    tray->show();
+    slint::run_event_loop();
     return 0;
 }

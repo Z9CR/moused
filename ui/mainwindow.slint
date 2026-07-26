@@ -6,6 +6,7 @@ import {
     Palette,
 } from "std-widgets.slint";
 
+
 export component MainWindow inherits Window {
     in-out property <int> mainwindow_width: 300;
     in-out property <int> mainwindow_height: 200;
@@ -64,6 +65,27 @@ export component MainWindow inherits Window {
                     text: "*test REC off";
                 }
             }
+        }
+    }
+}
+
+// SystemTrayIcon, Menu, MenuItem are Slint built-ins — no import needed
+export component Tray inherits SystemTrayIcon {
+    icon: @image-url("../assets/mousec.png");
+    title: "moused";
+
+    clicked => {
+
+    }
+
+    Menu {
+        MenuItem {
+            title: "*test Show / hide";
+            activated => { }
+        }
+        MenuItem {
+            title: "*test Quit";
+            activated => { }
         }
     }
 }

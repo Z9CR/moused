@@ -38,6 +38,9 @@ if (NOT Slint_FOUND)
     SOURCE_SUBDIR api/cpp
   )
   FetchContent_MakeAvailable(Slint)
+  # Slint's CMakeLists.txt omits system-tray from its feature list,
+  # but the Cargo feature exists and is required for SystemTrayIcon.
+  set_property(TARGET slint_cpp APPEND PROPERTY CORROSION_FEATURES system-tray)
 endif (NOT Slint_FOUND)
 
 target_link_libraries(moused PRIVATE Slint::Slint)
