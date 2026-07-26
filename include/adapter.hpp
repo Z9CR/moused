@@ -8,7 +8,7 @@
  * which is the right direction in physical world
  * if angle > 0,
  * it will point to the direction CW rotate `angle` degs from x+
- * if angle > 0,
+ * if angle < 0,
  * it will point to the direction CCW rotate `angle` degs from x+
  */
 typedef double angle;

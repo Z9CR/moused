@@ -1,6 +1,8 @@
 #include <adapter.hpp>
 #include <config.hpp>
 #include <Windows.h>
+#undef NULL   // Windows.h defines NULL as 0 — we need it for keys::NULL
+#undef DELETE // Windows.h defines DELETE as 0x00010000L — we need it for keys::DELETE
 #include <cmath>
 
 using mouse::mouse_btns;
@@ -267,13 +269,212 @@ namespace mouse
 
 }
 
-namespace keyboard {
-    keys get_key_pressed() {
+namespace keyboard
+{
+    // map VK_* to keys for GLFW‑style codes (≥256)
+    static keys vk2keys(int vk)
+    {
+        // alphanumeric & punctuation — same as ASCII / VK
+        if (vk >= 32 && vk <= 122)
+            return static_cast<keys>(vk);
 
-        return keys::A;
+        switch (vk)
+        {
+        case VK_ESCAPE:
+            return keys::ESCAPE;
+        case VK_RETURN:
+            return keys::ENTER;
+        case VK_TAB:
+            return keys::TAB;
+        case VK_BACK:
+            return keys::BACKSPACE;
+        case VK_INSERT:
+            return keys::INSERT;
+        case VK_DELETE:
+            return keys::DELETE;
+        case VK_RIGHT:
+            return keys::RIGHT;
+        case VK_LEFT:
+            return keys::LEFT;
+        case VK_DOWN:
+            return keys::DOWN;
+        case VK_UP:
+            return keys::UP;
+        case VK_PRIOR:
+            return keys::PAGE_UP;
+        case VK_NEXT:
+            return keys::PAGE_DOWN;
+        case VK_HOME:
+            return keys::HOME;
+        case VK_END:
+            return keys::END;
+        case VK_CAPITAL:
+            return keys::CAPS_LOCK;
+        case VK_SCROLL:
+            return keys::SCROLL_LOCK;
+        case VK_NUMLOCK:
+            return keys::NUM_LOCK;
+        case VK_SNAPSHOT:
+            return keys::PRINT_SCREEN;
+        case VK_PAUSE:
+            return keys::PAUSE;
+        case VK_LSHIFT:
+            return keys::LEFT_SHIFT;
+        case VK_LCONTROL:
+            return keys::LEFT_CONTROL;
+        case VK_LMENU:
+            return keys::LEFT_ALT;
+        case VK_LWIN:
+            return keys::LEFT_SUPER;
+        case VK_RSHIFT:
+            return keys::RIGHT_SHIFT;
+        case VK_RCONTROL:
+            return keys::RIGHT_CONTROL;
+        case VK_RMENU:
+            return keys::RIGHT_ALT;
+        case VK_RWIN:
+            return keys::RIGHT_SUPER;
+        case VK_APPS:
+            return keys::KB_MENU;
+        default:
+            break;
+        }
+
+        // F1 – F12: VK_F1 = 0x70, your F1 = 290
+        if (vk >= VK_F1 && vk <= VK_F12)
+            return static_cast<keys>(290 + (vk - VK_F1));
+
+        // numpad 0–9: VK_NUMPAD0 = 0x60, your KP_0 = 320
+        if (vk >= VK_NUMPAD0 && vk <= VK_NUMPAD9)
+            return static_cast<keys>(320 + (vk - VK_NUMPAD0));
+
+        switch (vk)
+        {
+        case VK_DECIMAL:
+            return keys::KP_DECIMAL;
+        case VK_DIVIDE:
+            return keys::KP_DIVIDE;
+        case VK_MULTIPLY:
+            return keys::KP_MULTIPLY;
+        case VK_SUBTRACT:
+            return keys::KP_SUBTRACT;
+        case VK_ADD:
+            return keys::KP_ADD;
+        default:
+            break;
+        }
+
+        return keys::NULL; // unmapped
     }
 
-    bool is_key_pressed(keys key) {
-        return 0;
+    keys get_key_pressed()
+    {
+        for (int vk = 0x01; vk <= 0xFE; ++vk)
+        {
+            // why windows dont support get key?
+            // fking ...
+            if (!(GetAsyncKeyState(vk) & 0x8000))
+                continue;
+            keys k = vk2keys(vk);
+            if (k != keys::NULL)
+                return k;
+        }
+        return keys::NULL;
+    }
+
+    bool is_key_pressed(keys key)
+    {
+        int vk;
+        int val = static_cast<int>(key);
+
+        // letters / digits / punctuation — same as VK_*
+        if (val > 0 && val < 256)
+        {
+            vk = val;
+        }
+        else
+        {
+            // reverse map: keys to VK_*
+            static const struct
+            {
+                keys k;
+                int vk;
+            } table[] = {
+                {keys::ESCAPE, VK_ESCAPE},
+                {keys::ENTER, VK_RETURN},
+                {keys::TAB, VK_TAB},
+                {keys::BACKSPACE, VK_BACK},
+                {keys::INSERT, VK_INSERT},
+                {keys::DELETE, VK_DELETE},
+                {keys::RIGHT, VK_RIGHT},
+                {keys::LEFT, VK_LEFT},
+                {keys::DOWN, VK_DOWN},
+                {keys::UP, VK_UP},
+                {keys::PAGE_UP, VK_PRIOR},
+                {keys::PAGE_DOWN, VK_NEXT},
+                {keys::HOME, VK_HOME},
+                {keys::END, VK_END},
+                {keys::CAPS_LOCK, VK_CAPITAL},
+                {keys::SCROLL_LOCK, VK_SCROLL},
+                {keys::NUM_LOCK, VK_NUMLOCK},
+                {keys::PRINT_SCREEN, VK_SNAPSHOT},
+                {keys::PAUSE, VK_PAUSE},
+                {keys::LEFT_SHIFT, VK_LSHIFT},
+                {keys::LEFT_CONTROL, VK_LCONTROL},
+                {keys::LEFT_ALT, VK_LMENU},
+                {keys::LEFT_SUPER, VK_LWIN},
+                {keys::RIGHT_SHIFT, VK_RSHIFT},
+                {keys::RIGHT_CONTROL, VK_RCONTROL},
+                {keys::RIGHT_ALT, VK_RMENU},
+                {keys::RIGHT_SUPER, VK_RWIN},
+                {keys::KB_MENU, VK_APPS},
+            };
+
+            vk = 0;
+            for (auto &e : table)
+            {
+                if (e.k == key)
+                {
+                    vk = e.vk;
+                    break;
+                }
+            }
+
+            // F1 – F12
+            if (!vk && val >= 290 && val <= 301)
+                vk = VK_F1 + (val - 290);
+
+            // Numpad 0–9
+            if (!vk && val >= 320 && val <= 329)
+                vk = VK_NUMPAD0 + (val - 320);
+
+            switch (val)
+            {
+            case 330:
+                vk = VK_DECIMAL;
+                break;
+            case 331:
+                vk = VK_DIVIDE;
+                break;
+            case 332:
+                vk = VK_MULTIPLY;
+                break;
+            case 333:
+                vk = VK_SUBTRACT;
+                break;
+            case 334:
+                vk = VK_ADD;
+                break;
+            case 335:
+                vk = VK_RETURN;
+                break; // KP_ENTER
+            }
+        }
+
+        return vk ? (GetAsyncKeyState(vk) & 0x8000) != 0 : false;
     }
 }
+
+// re-define in case mysterious bug
+#define DELETE (0x00010000L)
+#define NULL (void *)0
