@@ -1,0 +1,91 @@
+// ui/mainwindowwindow.slint
+import {
+    Button,
+    VerticalBox,
+    HorizontalBox,
+    Palette,
+} from "std-widgets.slint";
+
+
+export component MainWindow inherits Window {
+    in-out property <int> mainwindow_width: 300;
+    in-out property <int> mainwindow_height: 200;
+    // fallback val incase wrong param(help debug 2)
+    property <int> xunit: mainwindow_width / 16.0;
+    property <int> yunit: mainwindow_height / 16.0;
+    width: mainwindow_width * 1px;
+    height: mainwindow_height * 1px;
+    VerticalLayout {
+        // fake menubar beacuse menubar cant add btns
+        HorizontalLayout {
+            spacing: xunit * 0.5px;
+            height: yunit * 2px;
+            // setting
+            Button {
+                width: xunit * 4px;
+                text: "test0";
+                clicked => {
+                }
+            }
+            // add hotkey
+            Button {
+                width: xunit * 4px;
+                text: "test1";
+                clicked => {
+                }
+            }
+        }
+        // current macro & load macro
+        VerticalLayout {
+            // current macro
+            Text {
+                height: yunit * 4px;
+                text: "*test current macro is ...";
+            }
+            // load macro
+            Button {
+                height: yunit * 6px;
+                text: "*test load macro";
+                clicked => {}
+            }
+            // play macro by hotkey only
+        }
+        // record start & record end
+        // txt below will change into `REC on` when it is on
+        // only hotkey can toggle the status
+        VerticalLayout {
+            alignment: center;
+            padding-top: yunit * 1px;
+            height: yunit * 4px;
+            Rectangle {
+                background: Palette.selection-background;
+                height: yunit * 4px;
+                border-radius: 8px;
+                Text {
+                    text: "*test REC off";
+                }
+            }
+        }
+    }
+}
+
+// SystemTrayIcon, Menu, MenuItem are Slint built-ins — no import needed
+export component Tray inherits SystemTrayIcon {
+    icon: @image-url("../assets/mousec.png");
+    title: "moused";
+
+    clicked => {
+
+    }
+
+    Menu {
+        MenuItem {
+            title: "*test Show / hide";
+            activated => { }
+        }
+        MenuItem {
+            title: "*test Quit";
+            activated => { }
+        }
+    }
+}
