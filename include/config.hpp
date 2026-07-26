@@ -2,6 +2,12 @@
 // we will store these props in a file in the future
 // thus, just temporally store them in .c
 
+// unit: px
+extern const int mainwindow_height;
+
+// unit: px
+extern const int mainwindow_width;
+
 // use char* to avoid huuuuuuge STL
 extern const char* cfg_path;
 
