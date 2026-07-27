@@ -1,6 +1,9 @@
 #include <cstdio>
 #undef NULL  // avoid conflict with keyboard::keys::NULL
 #include <adapter.hpp>
+#ifndef NULL
+#define NULL 0  // restore NULL for standard compliance
+#endif
 #include <ui.hpp>
 #include <config.hpp>
 #include <polkit_utils.hpp>
@@ -10,13 +13,14 @@
 
 using keys = keyboard::keys;
 
+/*debug case
 #ifdef _WIN32
 #include <windows.h>
 #define sleep(x) Sleep(1000 * x)
 #else
 #include <unistd.h>
 #endif
-
+*/
 
 int main(int argc, char *argv[])
 {
@@ -69,6 +73,3 @@ int main(int argc, char *argv[])
     */
     return 0;
 }
-#ifndef NULL
-#define NULL 0  // restore NULL for standard compliance
-#endif
