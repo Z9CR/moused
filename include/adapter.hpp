@@ -32,12 +32,12 @@ namespace mouse
     };
 
     /// @brief translate cursor
-    /// @param a the angle away from x-
+    /// @param a the angle away from x+
     /// @param distant how many PXs will cursor translate
     void translate(angle a, int distant);
 
     /// @brief translate cursor
-    /// @param a the angle away from x-
+    /// @param a the angle away from x+
     /// @param distant how many PXs will cursor translate
     void translate(angle a, int distant, unsigned int time_ms);
 

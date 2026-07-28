@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     polkit_drop_privileges();
 #endif
     // `mw` stands for `mainwindow`
-    ///*
+    /*
     auto mw = MainWindow::create();
     auto tray = Tray::create();
     auto window_weak = slint::ComponentWeakHandle(mw);
@@ -49,8 +49,8 @@ int main(int argc, char *argv[])
     mw->show();
     tray->show();
     slint::run_event_loop();
-    //*/
-    /*
+    */
+    ///*
     #include <thread>
     #include <chrono>
     while(1) {
@@ -72,6 +72,6 @@ int main(int argc, char *argv[])
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    */
+    //*/
     return 0;
 }

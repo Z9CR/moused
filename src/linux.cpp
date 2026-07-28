@@ -379,16 +379,16 @@ namespace mouse
     /// @brief routate the MMB for `scale`*Delta
     void wheel(wheel_rotations rotation, double scale)
     {
-        if (scale == 0.0)
-            return;
         if (!platform_uinput_setup())
+            return;
+        if (scale == 0.0)
             return;
 
         // In Linux, one REL_WHEEL unit ~= one notch.
         // Windows WHEEL_DELTA = 120.
         int delta;
         if (scale >= 1.0 || scale <= -1.0)
-            delta = static_cast<int>(scale);
+            delta = static_cast<int>(scale + (scale > 0.0 ? 0.5 : -0.5));
         else if (scale > 0.0)
             delta = 1;
         else
@@ -457,8 +457,18 @@ bool platform_keyboard_capture_setup()
         {
             keyboards_fds[keyboard_count++] = tmp_fd;
         }
+        else
+        {
+            close(tmp_fd); // not a keyboard or limit reached — release fd
+        }
     }
     closedir(input_dir);
+
+    if (keyboard_count == 0)
+    {
+        fprintf(stderr, "moused: no keyboard devices found in /dev/input/\n");
+        return false;
+    }
     return true;
 }
 
@@ -472,11 +482,22 @@ static keys linux_keycode_to_keys(int code)
         return static_cast<keys>('1' + (code - KEY_1));
     if (code == KEY_0)
         return keys::ZERO;
-    if (code >= KEY_A && code <= KEY_Z)
-        return static_cast<keys>('A' + (code - KEY_A));
-
     switch (code)
     {
+    // letters — Linux key codes are NOT alphabetical, must map individually
+    case KEY_A: return keys::A;  case KEY_B: return keys::B;
+    case KEY_C: return keys::C;  case KEY_D: return keys::D;
+    case KEY_E: return keys::E;  case KEY_F: return keys::F;
+    case KEY_G: return keys::G;  case KEY_H: return keys::H;
+    case KEY_I: return keys::I;  case KEY_J: return keys::J;
+    case KEY_K: return keys::K;  case KEY_L: return keys::L;
+    case KEY_M: return keys::M;  case KEY_N: return keys::N;
+    case KEY_O: return keys::O;  case KEY_P: return keys::P;
+    case KEY_Q: return keys::Q;  case KEY_R: return keys::R;
+    case KEY_S: return keys::S;  case KEY_T: return keys::T;
+    case KEY_U: return keys::U;  case KEY_V: return keys::V;
+    case KEY_W: return keys::W;  case KEY_X: return keys::X;
+    case KEY_Y: return keys::Y;  case KEY_Z: return keys::Z;
     // punctuation & editing
     case KEY_MINUS:
         return keys::MINUS;
@@ -636,12 +657,19 @@ static int keys_to_linux_keycode(keys key)
     // numbers: '0'..'9' -> KEY_0..KEY_9
     if (val >= '0' && val <= '9')
         return KEY_0 + (val - '0');
-    // uppercase letters: 'A'..'Z' -> KEY_A..KEY_Z
-    if (val >= 'A' && val <= 'Z')
-        return KEY_A + (val - 'A');
-    // lowercase letters: 'a'..'z' -> KEY_A..KEY_Z (fallback)
-    if (val >= 'a' && val <= 'z')
-        return KEY_A + (val - 'a');
+    // letters — Linux key codes NOT alphabetical, must map individually
+    static const struct { keys k; int code; } letter_table[] = {
+        {keys::A, KEY_A}, {keys::B, KEY_B}, {keys::C, KEY_C}, {keys::D, KEY_D},
+        {keys::E, KEY_E}, {keys::F, KEY_F}, {keys::G, KEY_G}, {keys::H, KEY_H},
+        {keys::I, KEY_I}, {keys::J, KEY_J}, {keys::K, KEY_K}, {keys::L, KEY_L},
+        {keys::M, KEY_M}, {keys::N, KEY_N}, {keys::O, KEY_O}, {keys::P, KEY_P},
+        {keys::Q, KEY_Q}, {keys::R, KEY_R}, {keys::S, KEY_S}, {keys::T, KEY_T},
+        {keys::U, KEY_U}, {keys::V, KEY_V}, {keys::W, KEY_W}, {keys::X, KEY_X},
+        {keys::Y, KEY_Y}, {keys::Z, KEY_Z},
+    };
+    for (auto &e : letter_table)
+        if (e.k == key)
+            return e.code;
 
     // ASCII punctuation
     switch (val)
