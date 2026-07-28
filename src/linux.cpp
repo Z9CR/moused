@@ -126,9 +126,9 @@ bool platform_uinput_setup()
     memset(&usetup, 0, sizeof(usetup));
     snprintf(usetup.name, UINPUT_MAX_NAME_SIZE, "moused");
     usetup.id.bustype = BUS_USB;   // pretend it is a USB dev
-    usetup.id.vendor = 0x114514;   // just.. a
-    usetup.id.product = 0x1919810; // random num :)
-    usetup.id.version = 0xF0C1c0;  // F?CK?
+    usetup.id.vendor = 0x1145;   // just.. a
+    usetup.id.product = 0x1919; // random num :)
+    usetup.id.version = 0xF0C1c;  // F?CK
     // notify `ioctl` to setup our fake mouse which is named `moused`
     ioctl(uinput_fd, UI_DEV_SETUP, &usetup);
 #pragma endregion
@@ -200,7 +200,7 @@ static void get_cursor(int &x, int &y)
 
 namespace mouse
 {
-    /// @brief translate cursor, same logic as win.cpp
+    /// @brief translate cursor by relative movement
     /// @param a the angle away from x+
     /// @param distant how many PXs will cursor translate
     void translate(angle a, int distant, unsigned int time_ms)
@@ -208,27 +208,59 @@ namespace mouse
         if (!platform_uinput_setup())
             return;
 
-        // GetCursorPos
-        int cur_x, cur_y;
-        get_cursor(cur_x, cur_y);
-
         // normalise angle
         if (a >= 360.0)
-            while (a -= 360.0, a >= 360.0)
-            {
-            }
+            while (a -= 360.0, a >= 360.0) {}
         if (a <= -360.0)
-            while (a += 360.0, a <= -360.0)
-            {
-            }
+            while (a += 360.0, a <= -360.0) {}
 
         double rad = a * PI / 180.0;
-        int dstx = cur_x + static_cast<int>(cos(rad) * distant);
-        int dsty = cur_y + static_cast<int>(sin(rad) * distant);
-        move_to(dstx, dsty, time_ms);
+        double total_dx = cos(rad) * distant;
+        double total_dy = sin(rad) * distant;
+
+        int frames = time_ms / smoothmv_frametime;
+        if (frames < 1) frames = 1;
+
+        double inc_x = total_dx / frames;
+        double inc_y = total_dy / frames;
+        double acc_x = 0.0, acc_y = 0.0;
+
+        for (int i = 0; i < frames; ++i)
+        {
+            acc_x += inc_x;
+            acc_y += inc_y;
+
+            int step_x = static_cast<int>(acc_x);
+            int step_y = static_cast<int>(acc_y);
+
+            if (step_x != 0)
+            {
+                emit(EV_REL, REL_X, step_x);
+                acc_x -= step_x;
+            }
+            if (step_y != 0)
+            {
+                emit(EV_REL, REL_Y, step_y);
+                acc_y -= step_y;
+            }
+            if (step_x != 0 || step_y != 0)
+                emit_sync();
+
+            usleep(smoothmv_frametime * 1000);
+        }
+
+        // flush remaining subpixel remainder
+        int rem_x = static_cast<int>(std::round(acc_x));
+        int rem_y = static_cast<int>(std::round(acc_y));
+        if (rem_x != 0) emit(EV_REL, REL_X, rem_x);
+        if (rem_y != 0) emit(EV_REL, REL_Y, rem_y);
+        if (rem_x != 0 || rem_y != 0) emit_sync();
+
+        tracked_x += static_cast<int>(std::round(total_dx));
+        tracked_y += static_cast<int>(std::round(total_dy));
     }
 
-    /// @brief translate cursor
+    /// @brief translate cursor by relative movement
     /// @param a the angle away from x+
     /// @param distant how many PXs will cursor translate
     void translate(angle a, int distant)
@@ -236,22 +268,22 @@ namespace mouse
         if (!platform_uinput_setup())
             return;
 
-        int cur_x, cur_y;
-        get_cursor(cur_x, cur_y);
-
+        // normalise angle
         if (a >= 360.0)
-            while (a -= 360.0, a >= 360.0)
-            {
-            }
+            while (a -= 360.0, a >= 360.0) {}
         if (a <= -360.0)
-            while (a += 360.0, a <= -360.0)
-            {
-            }
+            while (a += 360.0, a <= -360.0) {}
 
         double rad = a * PI / 180.0;
-        int dstx = cur_x + static_cast<int>(cos(rad) * distant);
-        int dsty = cur_y + static_cast<int>(sin(rad) * distant);
-        move_to(dstx, dsty);
+        int dx = static_cast<int>(std::round(cos(rad) * distant));
+        int dy = static_cast<int>(std::round(sin(rad) * distant));
+
+        if (dx != 0) emit(EV_REL, REL_X, dx);
+        if (dy != 0) emit(EV_REL, REL_Y, dy);
+        if (dx != 0 || dy != 0) emit_sync();
+
+        tracked_x += dx;
+        tracked_y += dy;
     }
 
     /// @brief move the mouse to (x, y) (right = x+, down = y +)
