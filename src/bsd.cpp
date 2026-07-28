@@ -1,9 +1,13 @@
 #include <adapter.hpp>
 
-int platform_uinput_setup()
+bool platform_uinput_setup()
 {
     // BSD stub: no uinput implementation yet
     return -1;
+}
+
+bool platform_keyboard_capture_setup()
+{
 }
 
 namespace mouse
@@ -58,13 +62,16 @@ namespace mouse
 
 }
 
-namespace keyboard {
-    keys get_key_pressed() {
+namespace keyboard
+{
+    keys get_key_pressed()
+    {
 
         return keys::A;
     }
 
-    bool is_key_pressed(keys key) {
+    bool is_key_pressed(keys key)
+    {
         return 0;
     }
 }

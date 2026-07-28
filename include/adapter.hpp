@@ -68,7 +68,10 @@ namespace mouse
 /// Initialize platform input device (/dev/uinput, /dev/wsmouse etc.)
 /// Must be called as root; after a successful call the fd stays valid
 /// even after dropping privileges via seteuid().
-int platform_uinput_setup();
+bool platform_uinput_setup();
+
+/// init keyboard capture prog to impl hotkey feat
+bool platform_keyboard_capture_setup();
 #endif
 
 namespace keyboard

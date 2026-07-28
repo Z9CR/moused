@@ -30,14 +30,22 @@ int main(int argc, char *argv[])
 
     // Open /dev/uinput while we are still root — the fd stays valid
     // even after we drop privileges.
-    if (platform_uinput_setup() != 0)
+    if (!platform_uinput_setup())
     {
         fprintf(stderr, "moused: failed to initialize uinput device. "
                         "Is the uinput kernel module loaded?\n");
         return 1;
     }
 
-    // 3. Drop root so GUI runs under the original user's display session
+    // init keyboard capture prog
+    if (!platform_keyboard_capture_setup())
+    {
+        fprintf(stderr, "moused: failed to initialize keyboard event device. "
+                        "Is the input kernel module loaded?\n");
+        return 1;
+    }
+
+    // Drop root so GUI runs under the original user's display session
     polkit_drop_privileges();
 #endif
     // `mw` stands for `mainwindow`

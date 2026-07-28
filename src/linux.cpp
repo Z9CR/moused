@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <dirent.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -10,6 +11,7 @@
 #include <linux/input.h>
 #include <linux/uinput.h>
 
+#pragma region define &include
 using mouse::mouse_btns;
 using mouse::wheel_rotations;
 
@@ -20,7 +22,9 @@ enum axis
     X = 0,
     Y = 1
 };
+#pragma endregion
 
+#pragma region monitor init
 // screen size — /dev/fb0, fallback 1920*1080
 static int monitor_width = 1920;
 static int monitor_height = 1080;
@@ -30,7 +34,7 @@ static void detect_screen()
     int fb = open("/dev/fb0", O_RDONLY);
     if (fb >= 0)
     {
-        struct fb_var_screeninfo vi;
+        fb_var_screeninfo vi;
         if (ioctl(fb, FBIOGET_VSCREENINFO, &vi) == 0)
         {
             monitor_width = vi.xres;
@@ -45,106 +49,127 @@ static void detect_screen()
 //          This is an inherent limitation of uinput (write-only).
 static int tracked_x = 0;
 static int tracked_y = 0;
+#pragma endregion
 
+#pragma region utils
 // uinput singleton, root is required to open /dev/uinput
-static int uifd = -1;
+static int uinput_fd = -1;
 
-static void ui_cleanup()
+static void uinput_cleanup()
 {
-    if (uifd >= 0)
+    if (uinput_fd >= 0)
     {
-        ioctl(uifd, UI_DEV_DESTROY);
-        close(uifd);
-        uifd = -1;
+        ioctl(uinput_fd, UI_DEV_DESTROY);
+        close(uinput_fd);
+        uinput_fd = -1;
     }
 }
 
-static int ui_init()
+static bool platform_uinput_setup()
 {
-    if (uifd >= 0)
-        return 0;
+    // inited or not
+    if (uinput_fd >= 0)
+        return true;
 
+    // val -> monitor_width&&monitor_height
     detect_screen();
 
-    uifd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
-    if (uifd < 0)
+    // when the `uinput` isnt stub, open it as ReadOnly
+    uinput_fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+    // when `open()` occurs err, it'll ret negative val
+    if (uinput_fd < 0)
     {
         fprintf(stderr, "moused: cannot open /dev/uinput (need root). "
                         "Run with sudo or as root.\n");
-        return -1;
+        return false;
     }
 
-    // event types
-    ioctl(uifd, UI_SET_EVBIT, EV_KEY);
-    ioctl(uifd, UI_SET_EVBIT, EV_REL);
-    ioctl(uifd, UI_SET_EVBIT, EV_ABS);
-    ioctl(uifd, UI_SET_EVBIT, EV_SYN);
+#pragma region event types
+    // declare that can triggle key press event
+    ioctl(uinput_fd, UI_SET_EVBIT, EV_KEY);
+    // declare that can triggle relative move event
+    ioctl(uinput_fd, UI_SET_EVBIT, EV_REL);
+    // declare that can triggle absolute move event
+    ioctl(uinput_fd, UI_SET_EVBIT, EV_ABS);
+    // declare that can triggle data syn ev
+    ioctl(uinput_fd, UI_SET_EVBIT, EV_SYN);
+#pragma endregion
 
-    // buttons
-    ioctl(uifd, UI_SET_KEYBIT, BTN_LEFT);
-    ioctl(uifd, UI_SET_KEYBIT, BTN_RIGHT);
-    ioctl(uifd, UI_SET_KEYBIT, BTN_MIDDLE);
-    ioctl(uifd, UI_SET_KEYBIT, BTN_SIDE);
-    ioctl(uifd, UI_SET_KEYBIT, BTN_EXTRA);
+#pragma region buttons
+    // declare that can triggle ${key}
+    ioctl(uinput_fd, UI_SET_KEYBIT, BTN_LEFT);   // LMB
+    ioctl(uinput_fd, UI_SET_KEYBIT, BTN_RIGHT);  // RMB
+    ioctl(uinput_fd, UI_SET_KEYBIT, BTN_MIDDLE); // MMB
+    ioctl(uinput_fd, UI_SET_KEYBIT, BTN_SIDE);   // XB1
+    ioctl(uinput_fd, UI_SET_KEYBIT, BTN_EXTRA);  // XB2
+#pragma endregion
 
-    // relative axes
-    ioctl(uifd, UI_SET_RELBIT, REL_X);
-    ioctl(uifd, UI_SET_RELBIT, REL_Y);
-    ioctl(uifd, UI_SET_RELBIT, REL_WHEEL);
+// (axis[si] -> axes[pl])
+#pragma region axes
+    // mouse wheel use relative axes
+    ioctl(uinput_fd, UI_SET_RELBIT, REL_X);
+    ioctl(uinput_fd, UI_SET_RELBIT, REL_Y);
+    ioctl(uinput_fd, UI_SET_RELBIT, REL_WHEEL);
 
     // absolute axes (0 … 65535, same as Windows)
-    ioctl(uifd, UI_SET_ABSBIT, ABS_X);
-    ioctl(uifd, UI_SET_ABSBIT, ABS_Y);
+    ioctl(uinput_fd, UI_SET_ABSBIT, ABS_X);
+    ioctl(uinput_fd, UI_SET_ABSBIT, ABS_Y);
+#pragma endregion
 
-    struct uinput_setup usetup{};
+#pragma region setup V-Devs
+    // setup a virutal mouse named as `moused`
+    uinput_setup usetup{};
     memset(&usetup, 0, sizeof(usetup));
     snprintf(usetup.name, UINPUT_MAX_NAME_SIZE, "moused");
-    usetup.id.bustype = BUS_USB;
-    usetup.id.vendor = 0x1234;
-    usetup.id.product = 0x5678;
-    usetup.id.version = 1;
-    ioctl(uifd, UI_DEV_SETUP, &usetup);
+    usetup.id.bustype = BUS_USB;   // pretend it is a USB dev
+    usetup.id.vendor = 0x114514;   // just.. a
+    usetup.id.product = 0x1919810; // random num :)
+    usetup.id.version = 0xF0C1c0;  // F?CK?
+    // notify `ioctl` to setup our fake mouse which is named `moused`
+    ioctl(uinput_fd, UI_DEV_SETUP, &usetup);
+#pragma endregion
 
-    struct uinput_abs_setup abs{};
-    memset(&abs, 0, sizeof(abs));
+    uinput_abs_setup abs{};
 
+// set the coordinate sys's X&Y's max&&min val as same as win,
+// to synchronize Windows
+#pragma region coordinate sys
     abs.code = ABS_X;
     abs.absinfo.minimum = 0;
     abs.absinfo.maximum = 65535;
     abs.absinfo.resolution = 1;
-    ioctl(uifd, UI_ABS_SETUP, &abs);
+    ioctl(uinput_fd, UI_ABS_SETUP, &abs);
 
+    // refer2 line 128
     abs.code = ABS_Y;
     abs.absinfo.minimum = 0;
     abs.absinfo.maximum = 65535;
     abs.absinfo.resolution = 1;
-    ioctl(uifd, UI_ABS_SETUP, &abs);
+    ioctl(uinput_fd, UI_ABS_SETUP, &abs);
+#pragma endregion
 
-    if (ioctl(uifd, UI_DEV_CREATE) < 0)
+    if (ioctl(uinput_fd, UI_DEV_CREATE) < 0)
     {
         fprintf(stderr, "moused: UI_DEV_CREATE failed\n");
-        close(uifd);
-        uifd = -1;
-        return -1;
+        close(uinput_fd);
+        uinput_fd = -1;
+        return false;
     }
 
-    atexit(ui_cleanup);
-    return 0;
+    atexit(uinput_cleanup);
+    return true;
 }
 
-int platform_uinput_setup()
-{
-    return ui_init();
-}
+
 
 // emit helpers
 static inline void emit(int type, int code, int val)
 {
-    struct input_event ev{};
+    input_event ev{};
     ev.type = type;
     ev.code = code;
     ev.value = val;
-    write(uifd, &ev, sizeof(ev));
+    write(uinput_fd, &ev, sizeof(ev));
 }
 
 static inline void emit_sync()
@@ -161,13 +186,7 @@ static int px2pos(int px, axis d)
         return (int)(((long long)px * 65535 + (monitor_height - 1) / 2) / (monitor_height - 1));
 }
 
-static int pos2px(int pos, axis d)
-{
-    if (d == X)
-        return (int)(((long long)(monitor_width - 1) * pos + 65535 / 2) / 65535);
-    else
-        return (int)(((long long)(monitor_height - 1) * pos + 65535 / 2) / 65535);
-}
+// no pos2px 'cause the /dev/uinput is write-only
 
 // GetCursorPos() replacement
 static void get_cursor(int &x, int &y)
@@ -175,6 +194,7 @@ static void get_cursor(int &x, int &y)
     x = tracked_x;
     y = tracked_y;
 }
+#pragma endregion
 
 namespace mouse
 {
@@ -183,7 +203,7 @@ namespace mouse
     /// @param distant how many PXs will cursor translate
     void translate(angle a, int distant, unsigned int time_ms)
     {
-        if (ui_init() < 0)
+        if (platform_uinput_setup() < 0)
             return;
 
         // GetCursorPos
@@ -211,7 +231,7 @@ namespace mouse
     /// @param distant how many PXs will cursor translate
     void translate(angle a, int distant)
     {
-        if (ui_init() < 0)
+        if (platform_uinput_setup() < 0)
             return;
 
         int cur_x, cur_y;
@@ -238,7 +258,7 @@ namespace mouse
     /// @param time_ms: time duration for the smooth movement, in ms
     void move_to(unsigned int x, unsigned int y, unsigned int time_ms)
     {
-        if (ui_init() < 0)
+        if (platform_uinput_setup() < 0)
             return;
 
         // get current position
@@ -272,7 +292,7 @@ namespace mouse
     /// @param y: how many PXs away from up boarder
     void move_to(unsigned int x, unsigned int y)
     {
-        if (ui_init() < 0)
+        if (platform_uinput_setup() < 0)
             return;
 
         emit(EV_ABS, ABS_X, px2pos(x, X));
@@ -286,7 +306,7 @@ namespace mouse
     /// @brief click the `btn`
     void click(mouse_btns btn)
     {
-        if (ui_init() < 0)
+        if (platform_uinput_setup() < 0)
             return;
         press(btn);
         release(btn);
@@ -295,7 +315,7 @@ namespace mouse
     /// @brief press the `btn`
     void press(mouse_btns btn)
     {
-        if (ui_init() < 0)
+        if (platform_uinput_setup() < 0)
             return;
 
         int code;
@@ -326,7 +346,7 @@ namespace mouse
     /// @brief release the pressed `btn`
     void release(mouse_btns btn)
     {
-        if (ui_init() < 0)
+        if (platform_uinput_setup() < 0)
             return;
 
         int code;
@@ -359,7 +379,7 @@ namespace mouse
     {
         if (scale == 0.0)
             return;
-        if (ui_init() < 0)
+        if (platform_uinput_setup() < 0)
             return;
 
         // In Linux, one REL_WHEEL unit ~= one notch.
@@ -380,13 +400,80 @@ namespace mouse
     }
 }
 
-namespace keyboard {
-    keys get_key_pressed() {
+// as4 linux, we have root now so we can open /dev/...
+// 4keyboard, we dont need to write /dev/uinput
+//  instead reading /dev/input/event* (event* = keyboard*'s sig)
+
+static int *keyboards_fds{};
+
+bool is_keyboard(int fd)
+{
+    unsigned long evbits;
+    // Get the bitmask of supported event types
+    if (ioctl(fd, EVIOCGBIT(0, sizeof(evbits)), &evbits) < 0)
+    {
+        return true; // Error
+    }
+
+    // Check if EV_KEY (value 1) is supported
+    if (evbits & (1 << EV_KEY))
+    {
+        return true; // Likely a keyboard or keypad
+    }
+    return false;
+}
+
+bool platform_keyboard_capture_setup()
+{
+    // open dir
+    constexpr char *_input_dir = "/dev/input/";
+    DIR *input_dir = opendir(_input_dir);
+    if (!input_dir) // when err
+    {
+        fprintf(stderr, "error occured when opening /dev/input");
+        return false;
+    }
+
+    dirent *entry{};
+    // travel all the `input_dir`
+    while ((entry = readdir(input_dir)) != nullptr)
+    {
+        // the `i` is used to store tmp_fd
+        int i = 0;
+        // fliter event*
+        if (strncmp(entry->d_name, "event", 5) != 0)
+            continue;
+
+        // get path
+        // _input_dir contain a tail `/` so we dont have to cat another
+        const char *fullpath = strcat(_input_dir, entry->d_name);
+        // try to open
+        int tmp_fd = open(fullpath, O_RDONLY);
+        if (tmp_fd == -1)
+            continue;
+
+        if (is_keyboard(tmp_fd))
+        {
+            keyboards_fds[i] = tmp_fd;
+        }
+        i++;
+    }
+    closedir(input_dir);
+    return true;
+}
+
+static int keyboard_fd = -1;
+
+namespace keyboard
+{
+    keys get_key_pressed()
+    {
 
         return keys::A;
     }
 
-    bool is_key_pressed(keys key) {
+    bool is_key_pressed(keys key)
+    {
         return 0;
     }
 }
