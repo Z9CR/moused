@@ -65,7 +65,7 @@ static void uinput_cleanup()
     }
 }
 
-static bool platform_uinput_setup()
+bool platform_uinput_setup()
 {
     // inited or not
     if (uinput_fd >= 0)
@@ -203,7 +203,7 @@ namespace mouse
     /// @param distant how many PXs will cursor translate
     void translate(angle a, int distant, unsigned int time_ms)
     {
-        if (platform_uinput_setup() < 0)
+        if (!platform_uinput_setup())
             return;
 
         // GetCursorPos
@@ -231,7 +231,7 @@ namespace mouse
     /// @param distant how many PXs will cursor translate
     void translate(angle a, int distant)
     {
-        if (platform_uinput_setup() < 0)
+        if (!platform_uinput_setup())
             return;
 
         int cur_x, cur_y;
@@ -258,7 +258,7 @@ namespace mouse
     /// @param time_ms: time duration for the smooth movement, in ms
     void move_to(unsigned int x, unsigned int y, unsigned int time_ms)
     {
-        if (platform_uinput_setup() < 0)
+        if (!platform_uinput_setup())
             return;
 
         // get current position
@@ -292,7 +292,7 @@ namespace mouse
     /// @param y: how many PXs away from up boarder
     void move_to(unsigned int x, unsigned int y)
     {
-        if (platform_uinput_setup() < 0)
+        if (!platform_uinput_setup())
             return;
 
         emit(EV_ABS, ABS_X, px2pos(x, X));
@@ -306,7 +306,7 @@ namespace mouse
     /// @brief click the `btn`
     void click(mouse_btns btn)
     {
-        if (platform_uinput_setup() < 0)
+        if (!platform_uinput_setup())
             return;
         press(btn);
         release(btn);
@@ -315,7 +315,7 @@ namespace mouse
     /// @brief press the `btn`
     void press(mouse_btns btn)
     {
-        if (platform_uinput_setup() < 0)
+        if (!platform_uinput_setup())
             return;
 
         int code;
@@ -346,7 +346,7 @@ namespace mouse
     /// @brief release the pressed `btn`
     void release(mouse_btns btn)
     {
-        if (platform_uinput_setup() < 0)
+        if (!platform_uinput_setup())
             return;
 
         int code;
@@ -379,7 +379,7 @@ namespace mouse
     {
         if (scale == 0.0)
             return;
-        if (platform_uinput_setup() < 0)
+        if (!platform_uinput_setup())
             return;
 
         // In Linux, one REL_WHEEL unit ~= one notch.
@@ -404,15 +404,17 @@ namespace mouse
 // 4keyboard, we dont need to write /dev/uinput
 //  instead reading /dev/input/event* (event* = keyboard*'s sig)
 
-static int *keyboards_fds{};
+#define MAX_KEYBOARDS 16
+static int keyboards_fds[MAX_KEYBOARDS];
+static int keyboard_count = 0;
 
-bool is_keyboard(int fd)
+static bool is_keyboard(int fd)
 {
     unsigned long evbits;
     // Get the bitmask of supported event types
     if (ioctl(fd, EVIOCGBIT(0, sizeof(evbits)), &evbits) < 0)
     {
-        return true; // Error
+        return false; // can't read — not a keyboard
     }
 
     // Check if EV_KEY (value 1) is supported
@@ -426,11 +428,10 @@ bool is_keyboard(int fd)
 bool platform_keyboard_capture_setup()
 {
     // open dir
-    constexpr char *_input_dir = "/dev/input/";
-    DIR *input_dir = opendir(_input_dir);
+    DIR *input_dir = opendir("/dev/input/");
     if (!input_dir) // when err
     {
-        fprintf(stderr, "error occured when opening /dev/input");
+        fprintf(stderr, "error occured when opening /dev/input\n");
         return false;
     }
 
@@ -438,31 +439,26 @@ bool platform_keyboard_capture_setup()
     // travel all the `input_dir`
     while ((entry = readdir(input_dir)) != nullptr)
     {
-        // the `i` is used to store tmp_fd
-        int i = 0;
         // fliter event*
         if (strncmp(entry->d_name, "event", 5) != 0)
             continue;
 
-        // get path
-        // _input_dir contain a tail `/` so we dont have to cat another
-        const char *fullpath = strcat(_input_dir, entry->d_name);
+        // get path — build safely with snprintf
+        char fullpath[256];
+        snprintf(fullpath, sizeof(fullpath), "/dev/input/%s", entry->d_name);
         // try to open
         int tmp_fd = open(fullpath, O_RDONLY);
         if (tmp_fd == -1)
             continue;
 
-        if (is_keyboard(tmp_fd))
+        if (is_keyboard(tmp_fd) && keyboard_count < MAX_KEYBOARDS)
         {
-            keyboards_fds[i] = tmp_fd;
+            keyboards_fds[keyboard_count++] = tmp_fd;
         }
-        i++;
     }
     closedir(input_dir);
     return true;
 }
-
-static int keyboard_fd = -1;
 
 namespace keyboard
 {

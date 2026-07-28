@@ -3,11 +3,13 @@
 bool platform_uinput_setup()
 {
     // BSD stub: no uinput implementation yet
-    return -1;
+    return false;
 }
 
 bool platform_keyboard_capture_setup()
 {
+    // BSD stub: no keyboard capture implementation yet
+    return false;
 }
 
 namespace mouse
