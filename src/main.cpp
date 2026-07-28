@@ -1,14 +1,14 @@
+#include <cstdio>
+#undef NULL  // avoid conflict with keyboard::keys::NULL
 #include <adapter.hpp>
 #include <ui.hpp>
 #include <config.hpp>
-// the lib below will not be compiled only on Linux&BSD
 #include <polkit_utils.hpp>
 // auto gen by slint
 // if error, just ignore
 #include <mainwindow.h>
 
 using keys = keyboard::keys;
-// debug tools
 
 #ifdef _WIN32
 #include <windows.h>
@@ -21,10 +21,22 @@ using keys = keyboard::keys;
 int main(int argc, char *argv[])
 {
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+    // Elevate to root (via pkexec if needed)
     polkit_root_getter(argc, argv);
+
+    // Open /dev/uinput while we are still root — the fd stays valid
+    // even after we drop privileges.
+    if (platform_uinput_setup() != 0)
+    {
+        fprintf(stderr, "moused: failed to initialize uinput device. "
+                        "Is the uinput kernel module loaded?\n");
+        return 1;
+    }
+
+    // 3. Drop root so GUI runs under the original user's display session
+    polkit_drop_privileges();
 #endif
     // `mw` stands for `mainwindow`
-    ///* debug switch
     auto mw = MainWindow::create();
     auto tray = Tray::create();
     auto window_weak = slint::ComponentWeakHandle(mw);
@@ -57,3 +69,6 @@ int main(int argc, char *argv[])
     */
     return 0;
 }
+#ifndef NULL
+#define NULL 0  // restore NULL for standard compliance
+#endif

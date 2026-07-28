@@ -1,5 +1,11 @@
 #include <adapter.hpp>
 
+int platform_uinput_setup()
+{
+    // BSD stub: no uinput implementation yet
+    return -1;
+}
+
 namespace mouse
 {
     /// @brief translate cursor

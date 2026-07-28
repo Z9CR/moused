@@ -64,6 +64,13 @@ namespace mouse
     void wheel(wheel_rotations rotation, double scale);
 };
 
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+/// Initialize platform input device (/dev/uinput, /dev/wsmouse etc.)
+/// Must be called as root; after a successful call the fd stays valid
+/// even after dropping privileges via seteuid().
+int platform_uinput_setup();
+#endif
+
 namespace keyboard
 {
     // Keyboard keys (US keyboard layout)

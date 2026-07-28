@@ -12,5 +12,9 @@
 // the program must have privilege in Linux and BSDs to RW /dev/uinput(Linux) or /dev/wsmouse(BSDs)
 void polkit_root_getter(int argc, char* argv[]);
 
+/// Drop root privileges back to the original user.
+/// Call this after platform_uinput_setup() has succeeded.
+void polkit_drop_privileges();
+
 #endif
 #endif

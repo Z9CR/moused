@@ -132,6 +132,11 @@ static int ui_init()
     return 0;
 }
 
+int platform_uinput_setup()
+{
+    return ui_init();
+}
+
 // emit helpers
 static inline void emit(int type, int code, int val)
 {
