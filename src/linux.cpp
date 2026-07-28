@@ -11,6 +11,10 @@
 #include <linux/input.h>
 #include <linux/uinput.h>
 
+#ifdef NULL
+#undef NULL // Linux headers define NULL as `((void*)0)` (in C: __null, but we're coding with CPP) — we need it for keys::NULL
+#endif
+
 #pragma region define &include
 using mouse::mouse_btns;
 using mouse::wheel_rotations;
@@ -159,8 +163,6 @@ bool platform_uinput_setup()
     atexit(uinput_cleanup);
     return true;
 }
-
-
 
 // emit helpers
 static inline void emit(int type, int code, int val)
@@ -404,7 +406,7 @@ namespace mouse
 // 4keyboard, we dont need to write /dev/uinput
 //  instead reading /dev/input/event* (event* = keyboard*'s sig)
 
-#define MAX_KEYBOARDS 16
+constexpr int MAX_KEYBOARDS = 16;
 static int keyboards_fds[MAX_KEYBOARDS];
 static int keyboard_count = 0;
 
@@ -460,16 +462,328 @@ bool platform_keyboard_capture_setup()
     return true;
 }
 
+using keys = keyboard::keys;
+
+// map Linux input key codes to keys enum (mirrors Windows' vk2keys)
+static keys linux_keycode_to_keys(int code)
+{
+    // numbers row: KEY_1(2)..KEY_9(10), KEY_0(11)
+    if (code >= KEY_1 && code <= KEY_9)
+        return static_cast<keys>('1' + (code - KEY_1));
+    if (code == KEY_0)
+        return keys::ZERO;
+    if (code >= KEY_A && code <= KEY_Z)
+        return static_cast<keys>('A' + (code - KEY_A));
+
+    switch (code)
+    {
+    // punctuation & editing
+    case KEY_MINUS:
+        return keys::MINUS;
+    case KEY_EQUAL:
+        return keys::EQUAL;
+    case KEY_BACKSPACE:
+        return keys::BACKSPACE;
+    case KEY_TAB:
+        return keys::TAB;
+    case KEY_LEFTBRACE:
+        return keys::LEFT_BRACKET;
+    case KEY_RIGHTBRACE:
+        return keys::RIGHT_BRACKET;
+    case KEY_ENTER:
+        return keys::ENTER;
+    case KEY_LEFTCTRL:
+        return keys::LEFT_CONTROL;
+    case KEY_SEMICOLON:
+        return keys::SEMICOLON;
+    case KEY_APOSTROPHE:
+        return keys::APOSTROPHE;
+    case KEY_GRAVE:
+        return keys::GRAVE;
+    case KEY_LEFTSHIFT:
+        return keys::LEFT_SHIFT;
+    case KEY_BACKSLASH:
+        return keys::BACKSLASH;
+    case KEY_COMMA:
+        return keys::COMMA;
+    case KEY_DOT:
+        return keys::PERIOD;
+    case KEY_SLASH:
+        return keys::SLASH;
+    case KEY_RIGHTSHIFT:
+        return keys::RIGHT_SHIFT;
+    case KEY_LEFTALT:
+        return keys::LEFT_ALT;
+    case KEY_SPACE:
+        return keys::SPACE;
+    case KEY_CAPSLOCK:
+        return keys::CAPS_LOCK;
+    // function keys
+    case KEY_F1:
+        return keys::F1;
+    case KEY_F2:
+        return keys::F2;
+    case KEY_F3:
+        return keys::F3;
+    case KEY_F4:
+        return keys::F4;
+    case KEY_F5:
+        return keys::F5;
+    case KEY_F6:
+        return keys::F6;
+    case KEY_F7:
+        return keys::F7;
+    case KEY_F8:
+        return keys::F8;
+    case KEY_F9:
+        return keys::F9;
+    case KEY_F10:
+        return keys::F10;
+    case KEY_F11:
+        return keys::F11;
+    case KEY_F12:
+        return keys::F12;
+    // navigation & locks
+    case KEY_ESC:
+        return keys::ESCAPE;
+    case KEY_INSERT:
+        return keys::INSERT;
+    case KEY_DELETE:
+        return keys::DELETE;
+    case KEY_RIGHT:
+        return keys::RIGHT;
+    case KEY_LEFT:
+        return keys::LEFT;
+    case KEY_DOWN:
+        return keys::DOWN;
+    case KEY_UP:
+        return keys::UP;
+    case KEY_PAGEUP:
+        return keys::PAGE_UP;
+    case KEY_PAGEDOWN:
+        return keys::PAGE_DOWN;
+    case KEY_HOME:
+        return keys::HOME;
+    case KEY_END:
+        return keys::END;
+    case KEY_SCROLLLOCK:
+        return keys::SCROLL_LOCK;
+    case KEY_NUMLOCK:
+        return keys::NUM_LOCK;
+    case KEY_SYSRQ:
+        return keys::PRINT_SCREEN;
+    case KEY_PAUSE:
+        return keys::PAUSE;
+    // right modifiers
+    case KEY_RIGHTCTRL:
+        return keys::RIGHT_CONTROL;
+    case KEY_RIGHTALT:
+        return keys::RIGHT_ALT;
+    case KEY_LEFTMETA:
+        return keys::LEFT_SUPER;
+    case KEY_RIGHTMETA:
+        return keys::RIGHT_SUPER;
+#ifdef KEY_MENU
+    case KEY_MENU:
+        return keys::KB_MENU;
+#endif
+    // keypad
+    case KEY_KP0:
+        return keys::KP_0;
+    case KEY_KP1:
+        return keys::KP_1;
+    case KEY_KP2:
+        return keys::KP_2;
+    case KEY_KP3:
+        return keys::KP_3;
+    case KEY_KP4:
+        return keys::KP_4;
+    case KEY_KP5:
+        return keys::KP_5;
+    case KEY_KP6:
+        return keys::KP_6;
+    case KEY_KP7:
+        return keys::KP_7;
+    case KEY_KP8:
+        return keys::KP_8;
+    case KEY_KP9:
+        return keys::KP_9;
+    case KEY_KPDOT:
+        return keys::KP_DECIMAL;
+    case KEY_KPSLASH:
+        return keys::KP_DIVIDE;
+    case KEY_KPASTERISK:
+        return keys::KP_MULTIPLY;
+    case KEY_KPMINUS:
+        return keys::KP_SUBTRACT;
+    case KEY_KPPLUS:
+        return keys::KP_ADD;
+    case KEY_KPENTER:
+        return keys::KP_ENTER;
+    case KEY_KPEQUAL:
+        return keys::KP_EQUAL;
+    default:
+        break;
+    }
+    return keys::NULL;
+}
+
+// reverse map: keys enum to Linux key code (mirrors Windows' is_key_pressed reverse map)
+static int keys_to_linux_keycode(keys key)
+{
+    int val = static_cast<int>(key);
+
+    // numbers: '0'..'9' -> KEY_0..KEY_9
+    if (val >= '0' && val <= '9')
+        return KEY_0 + (val - '0');
+    // uppercase letters: 'A'..'Z' -> KEY_A..KEY_Z
+    if (val >= 'A' && val <= 'Z')
+        return KEY_A + (val - 'A');
+    // lowercase letters: 'a'..'z' -> KEY_A..KEY_Z (fallback)
+    if (val >= 'a' && val <= 'z')
+        return KEY_A + (val - 'a');
+
+    // ASCII punctuation
+    switch (val)
+    {
+    case '\'':
+        return KEY_APOSTROPHE;
+    case ',':
+        return KEY_COMMA;
+    case '-':
+        return KEY_MINUS;
+    case '.':
+        return KEY_DOT;
+    case '/':
+        return KEY_SLASH;
+    case ';':
+        return KEY_SEMICOLON;
+    case '=':
+        return KEY_EQUAL;
+    case '[':
+        return KEY_LEFTBRACE;
+    case '\\':
+        return KEY_BACKSLASH;
+    case ']':
+        return KEY_RIGHTBRACE;
+    case ' ':
+        return KEY_SPACE;
+    case '`':
+        return KEY_GRAVE;
+    default:
+        break;
+    }
+
+    // F1–F12
+    if (val >= static_cast<int>(keys::F1) && val <= static_cast<int>(keys::F12))
+        return KEY_F1 + (val - static_cast<int>(keys::F1));
+
+    // keypad 0–9
+    if (val >= static_cast<int>(keys::KP_0) && val <= static_cast<int>(keys::KP_9))
+        return KEY_KP0 + (val - static_cast<int>(keys::KP_0));
+
+    // special keys — static table
+    static const struct
+    {
+        keys k;
+        int code;
+    } table[] = {
+        {keys::ESCAPE, KEY_ESC},
+        {keys::ENTER, KEY_ENTER},
+        {keys::TAB, KEY_TAB},
+        {keys::BACKSPACE, KEY_BACKSPACE},
+        {keys::INSERT, KEY_INSERT},
+        {keys::DELETE, KEY_DELETE},
+        {keys::RIGHT, KEY_RIGHT},
+        {keys::LEFT, KEY_LEFT},
+        {keys::DOWN, KEY_DOWN},
+        {keys::UP, KEY_UP},
+        {keys::PAGE_UP, KEY_PAGEUP},
+        {keys::PAGE_DOWN, KEY_PAGEDOWN},
+        {keys::HOME, KEY_HOME},
+        {keys::END, KEY_END},
+        {keys::CAPS_LOCK, KEY_CAPSLOCK},
+        {keys::SCROLL_LOCK, KEY_SCROLLLOCK},
+        {keys::NUM_LOCK, KEY_NUMLOCK},
+        {keys::PRINT_SCREEN, KEY_SYSRQ},
+        {keys::PAUSE, KEY_PAUSE},
+        {keys::LEFT_SHIFT, KEY_LEFTSHIFT},
+        {keys::LEFT_CONTROL, KEY_LEFTCTRL},
+        {keys::LEFT_ALT, KEY_LEFTALT},
+        {keys::LEFT_SUPER, KEY_LEFTMETA},
+        {keys::RIGHT_SHIFT, KEY_RIGHTSHIFT},
+        {keys::RIGHT_CONTROL, KEY_RIGHTCTRL},
+        {keys::RIGHT_ALT, KEY_RIGHTALT},
+        {keys::RIGHT_SUPER, KEY_RIGHTMETA},
+#ifdef KEY_MENU
+        {keys::KB_MENU, KEY_MENU},
+#endif
+        // keypad
+        {keys::KP_DECIMAL, KEY_KPDOT},
+        {keys::KP_DIVIDE, KEY_KPSLASH},
+        {keys::KP_MULTIPLY, KEY_KPASTERISK},
+        {keys::KP_SUBTRACT, KEY_KPMINUS},
+        {keys::KP_ADD, KEY_KPPLUS},
+        {keys::KP_ENTER, KEY_KPENTER},
+        {keys::KP_EQUAL, KEY_KPEQUAL},
+    };
+
+    for (auto &e : table)
+        if (e.k == key)
+            return e.code;
+
+    return -1; // unmapped
+}
+
+// now the `keyboards_fds[]` should be filled with `keyboard_count` events' fd
 namespace keyboard
 {
     keys get_key_pressed()
     {
+        // query current key states via EVIOCGKEY (non‑destructive — does NOT
+        // consume events, other processes still receive them)
+        for (int i = 0; i < keyboard_count; i++)
+        {
+            unsigned char key_b[(KEY_CNT + 7) / 8];
+            memset(key_b, 0, sizeof(key_b));
+            if (ioctl(keyboards_fds[i], EVIOCGKEY(sizeof(key_b)), key_b) < 0)
+                continue;
 
-        return keys::A;
+            for (int code = 0; code < KEY_CNT; code++)
+            {
+                if (key_b[code / 8] & (1 << (code % 8)))
+                {
+                    keys k = linux_keycode_to_keys(code);
+                    if (k != keys::NULL)
+                        return k;
+                }
+            }
+        }
+        return keys::NULL;
     }
 
     bool is_key_pressed(keys key)
     {
-        return 0;
+        if (key == keys::NULL)
+            return false;
+
+        int linux_code = keys_to_linux_keycode(key);
+        if (linux_code < 0)
+            return false;
+
+        for (int i = 0; i < keyboard_count; i++)
+        {
+            unsigned char key_b[(KEY_CNT + 7) / 8];
+            memset(key_b, 0, sizeof(key_b));
+            if (ioctl(keyboards_fds[i], EVIOCGKEY(sizeof(key_b)), key_b) < 0)
+                continue;
+
+            if (key_b[linux_code / 8] & (1 << (linux_code % 8)))
+                return true;
+        }
+        return false;
     }
 }
+
+// re-define in case mysterious bug
+#define NULL ((void *)0)

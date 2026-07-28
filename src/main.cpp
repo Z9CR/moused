@@ -13,15 +13,6 @@
 
 using keys = keyboard::keys;
 
-/*debug case
-#ifdef _WIN32
-#include <windows.h>
-#define sleep(x) Sleep(1000 * x)
-#else
-#include <unistd.h>
-#endif
-*/
-
 int main(int argc, char *argv[])
 {
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
@@ -49,6 +40,7 @@ int main(int argc, char *argv[])
     polkit_drop_privileges();
 #endif
     // `mw` stands for `mainwindow`
+    ///*
     auto mw = MainWindow::create();
     auto tray = Tray::create();
     auto window_weak = slint::ComponentWeakHandle(mw);
@@ -59,6 +51,8 @@ int main(int argc, char *argv[])
     slint::run_event_loop();
     //*/
     /*
+    #include <thread>
+    #include <chrono>
     while(1) {
         if (keyboard::is_key_pressed(keys::L))
         {
@@ -76,7 +70,7 @@ int main(int argc, char *argv[])
         {
             mouse::translate(-90, 10);
         }
-        sleep(0.02);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     */
     return 0;
