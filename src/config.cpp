@@ -16,7 +16,7 @@ char platform_cfg_dir[512];
 
 // Fetch the Roaming AppData path, write into platform_cfg_dir
 // run it when init
-bool fetch_cfg_dir()
+bool init_cfg_dir_properties()
 {   
     // Primary: SHGetFolderPathA — ANSI, no conversion, no CoTaskMemFree
     if (SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, platform_cfg_dir) == S_OK)
@@ -39,6 +39,6 @@ bool fetch_cfg_dir()
 // unk sys
 #endif
 
-const char *cfg_path;
+const char* cfg_path;
 
 const int smoothmv_frametime = 4;

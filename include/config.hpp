@@ -27,4 +27,4 @@ extern const int smoothmv_frametime;
 // get `const char* platform_cfg_dir`
 // Fetch the Roaming AppData path, write into platform_cfg_dir
 // run it when init
-bool fetch_cfg_dir();
+bool init_cfg_dir_properties();

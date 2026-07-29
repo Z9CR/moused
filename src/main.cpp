@@ -10,6 +10,8 @@
 // auto gen by slint
 // if error, just ignore
 #include <mainwindow.h>
+// toml11
+#include <toml.hpp>
 
 using keys = keyboard::keys;
 
@@ -42,9 +44,10 @@ int main(int argc, char *argv[])
 #endif
 
     // run uni init
-    fetch_cfg_dir();
+    init_cfg_dir_properties();
 
     ///*debug*/printf("${platform_cfg_dir}: %s\n", platform_cfg_dir);
+
     // `mw` stands for `mainwindow`
     /*
     auto mw = MainWindow::create();

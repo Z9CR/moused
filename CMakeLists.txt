@@ -25,7 +25,7 @@ endif()
 
 add_executable(moused ${COMMON_SOURCES} ${PLATFORM_SOURCES} ${INCLUDES})
 
-
+# slint 
 if (NOT Slint_FOUND)
   message("Slint could not be located in the CMake module search path. Downloading it from Git and building it locally")
   include(FetchContent)
@@ -43,7 +43,17 @@ if (NOT Slint_FOUND)
   set_property(TARGET slint_cpp APPEND PROPERTY CORROSION_FEATURES system-tray)
 endif (NOT Slint_FOUND)
 
+# toml11
+include(FetchContent)
+FetchContent_Declare(
+  toml11
+  GIT_REPOSITORY https://github.com/ToruNiina/toml11.git
+  GIT_TAG        v4.4.0
+)
+FetchContent_MakeAvailable(toml11)
+
 target_link_libraries(moused PRIVATE Slint::Slint)
+target_link_libraries(moused PRIVATE toml11::toml11)
 target_include_directories(moused PRIVATE ${INCLUDES_DIR})
 
 # Slint's Rust backend (glutin/winit) needs WGL + IMM32 on Windows
