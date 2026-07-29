@@ -12,6 +12,14 @@
 #include <mainwindow.h>
 // toml11
 #include <toml.hpp>
+// luabridge
+extern "C"
+{
+     #include "lua.h"
+     #include "lauxlib.h"
+     #include "lualib.h"
+}
+#include "LuaBridge\LuaBridge.h"
 
 using keys = keyboard::keys;
 
