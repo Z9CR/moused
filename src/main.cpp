@@ -15,6 +15,7 @@ using keys = keyboard::keys;
 
 int main(int argc, char *argv[])
 {
+// run linux&bsds init
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
     // Elevate to root (via pkexec if needed)
     polkit_root_getter(argc, argv);
@@ -39,6 +40,11 @@ int main(int argc, char *argv[])
     // Drop root so GUI runs under the original user's display session
     polkit_drop_privileges();
 #endif
+
+    // run uni init
+    fetch_cfg_dir();
+
+    ///*debug*/printf("${platform_cfg_dir}: %s\n", platform_cfg_dir);
     // `mw` stands for `mainwindow`
     /*
     auto mw = MainWindow::create();
@@ -50,9 +56,8 @@ int main(int argc, char *argv[])
     tray->show();
     slint::run_event_loop();
     */
-    ///*
-    #include <thread>
-    #include <chrono>
+   
+    /*debug only
     while(1) {
         if (keyboard::is_key_pressed(keys::L))
         {
@@ -70,8 +75,8 @@ int main(int argc, char *argv[])
         {
             mouse::translate(-90, 10);
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        for (volatile int i = 0;i < 100000;i ++) {}
     }
-    //*/
+    */
     return 0;
 }

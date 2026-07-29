@@ -1,10 +1,10 @@
 try {
     cmake -B .\build
     cmake --build .\build
-    print 'compile work done'
+    Write-Host 'compile work done'
     .\build\Debug\moused.exe
 }
 finally {
-    Remove-Item .\build\Debug\*
-    print 'all the works done'
+    #Remove-Item .\build\Debug\*
+    Write-Host 'all the works done'
 }
