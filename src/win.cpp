@@ -1,8 +1,12 @@
 #include <adapter.hpp>
 #include <config.hpp>
 #include <Windows.h>
+#ifdef NULL
 #undef NULL   // Windows.h defines NULL as 0 — we need it for keys::NULL
+#endif
+#ifdef DELETE
 #undef DELETE // Windows.h defines DELETE as 0x00010000L — we need it for keys::DELETE
+#endif
 #include <cmath>
 
 using mouse::mouse_btns;
