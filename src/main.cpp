@@ -9,14 +9,15 @@ extern "C"
 #include "lauxlib.h"
 #include "lualib.h"
 }
-#include "LuaBridge\LuaBridge.h"
+#include "LuaBridge/LuaBridge.h"
 // debug incs
-#include <iostream>
+// #include <iostream>
 using keys = keyboard::keys;
 
 int main(int argc, char *argv[])
 {
-// run linux&bsds init
+
+#pragma region init
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
     // Elevate to root (via pkexec if needed)
     polkit_root_getter(argc, argv);
@@ -41,34 +42,16 @@ int main(int argc, char *argv[])
     // Drop root so GUI runs under the original user's display session
     polkit_drop_privileges();
 #endif
-
     // run uni init
     if (!init_cfg_dir_properties())
+    {
+        fprintf(stderr, "moused: error occured when fetching config path");
         return 1;
-
-    // debug
-    std::cout << platform_cfg_dir;
-
-    /*debug only
-    while(1) {
-        if (keyboard::is_key_pressed(keys::L))
-        {
-            mouse::translate(0, 10);
-        }
-        else if (keyboard::is_key_pressed(keys::J))
-        {
-            mouse::translate(90, 10);
-        }
-        else if (keyboard::is_key_pressed(keys::H))
-        {
-            mouse::translate(180, 10);
-        }
-        else if (keyboard::is_key_pressed(keys::K))
-        {
-            mouse::translate(-90, 10);
-        }
-        for (volatile int i = 0;i < 100000;i ++) {}
     }
-    */
+#pragma endregion
+    // debug fetch platform_cfg_dir
+    // std::cout << platform_cfg_dir;
+
+    
     return 0;
 }

@@ -8,10 +8,10 @@ extern const int mainwindow_height;
 // unit: px
 extern const int mainwindow_width;
 
-// windows: `%APPDATA%/moused`'s specific path
+// windows: `%APPDATA%/moused/`'s specific path
 // linux&bsds: `~/.config/moused/`'s specific~
-// macos: `~/Library/moused`
-extern char platform_cfg_dir[];
+// macos: `~/Library/moused/`
+extern char* platform_cfg_dir;
 
 // use char* to avoid huuuuuuge STL
 // cfg_path should point to `${platform_cfg_dir}/moused/cfg`
@@ -25,6 +25,8 @@ extern const int smoothmv_frametime;
 
 // utils
 // get `const char* platform_cfg_dir`
-// Fetch the Roaming AppData path, write into platform_cfg_dir
+// Fetch the Roaming `%%APPDATA%%\`(win), `~/moused/`(linux||bsds), `~/Library/moused/`(macos),
+// then write into platform_cfg_dir
+// attention: the `\` or `/` is included in the tail
 // run it when init
 bool init_cfg_dir_properties();

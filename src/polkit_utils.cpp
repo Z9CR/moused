@@ -32,8 +32,6 @@ static const char *get_exe_path(const char *argv0)
     return argv0; // last resort
 }
 
-#define ENV_TMPFILE "moused_env"
-
 // the program must have privilege in Linux and BSDs to RW /dev/uinput(Linux) or /dev/wsmouse(BSDs)
 void polkit_root_getter(int argc, char* argv[])
 {
@@ -54,7 +52,8 @@ void polkit_root_getter(int argc, char* argv[])
             fprintf(f, "MU_ORIG_UID=%d\n", getuid());
 
             const char *vars[] = {"DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY",
-                                  "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS", nullptr};
+                                  "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS",
+                                  "HOME", nullptr};
             for (const char **vp = vars; *vp; vp++)
             {
                 const char *val = getenv(*vp);
@@ -125,29 +124,16 @@ void polkit_root_getter(int argc, char* argv[])
                     }
                     else
                     {
-                        // Restore environment variable (but don't overwrite
-                        // if already set by pkexec or the calling process)
-                        setenv(key, val, 0);
+                        // Restore environment variable (overwrite pkexec's root env
+                        // with the original user's values)
+                        setenv(key, val, 1);
                     }
                 }
             }
             fclose(f);
             unlink(envfile);
 
-            // Restore HOME for the original user so that Xauthority
-            // resolution works correctly
-            if (orig_uid != (uid_t)-1 && orig_uid != 0)
-            {
-                char home_path[256];
-                snprintf(home_path, sizeof(home_path), "/home/%d", orig_uid);
-                struct stat st;
-                if (stat(home_path, &st) != 0)
-                {
-                    // Try getpwuid – but we're avoiding linking pw lookups for simplicity.
-                    // /home/<uid> is fine for the 99% case on Linux desktops.
-                }
-                setenv("HOME", home_path, 1);
-            }
+            // HOME is now saved & restored via the envfile mechanism above
         }
     }
 
