@@ -10,8 +10,8 @@ extern "C"
 #include "lualib.h"
 }
 #include "LuaBridge\LuaBridge.h"
+// debug incs
 #include <iostream>
-
 using keys = keyboard::keys;
 
 int main(int argc, char *argv[])
@@ -43,8 +43,12 @@ int main(int argc, char *argv[])
 #endif
 
     // run uni init
-    init_cfg_dir_properties();
-    
+    if (!init_cfg_dir_properties())
+        return 1;
+
+    // debug
+    std::cout << platform_cfg_dir;
+
     /*debug only
     while(1) {
         if (keyboard::is_key_pressed(keys::L))

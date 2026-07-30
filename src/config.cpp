@@ -13,22 +13,33 @@ char platform_cfg_dir[512];
 #include <windows.h>
 #include <shlobj.h>
 #include <stdio.h>
-
+#include <cstring>
 // Fetch the Roaming AppData path, write into platform_cfg_dir
 // run it when init
 bool init_cfg_dir_properties()
-{   
+{
     // Primary: SHGetFolderPathA — ANSI, no conversion, no CoTaskMemFree
     if (SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, platform_cfg_dir) == S_OK)
+    {
+        strcat(platform_cfg_dir, "\\moused");
         return true;
+    }
 
     // Fallback 1: use %APPDATA% env var
-    if (GetEnvironmentVariableA("APPDATA", platform_cfg_dir, sizeof(platform_cfg_dir)) > 0)
+    else if (GetEnvironmentVariableA("APPDATA", platform_cfg_dir, sizeof(platform_cfg_dir)) > 0)
+    {
+        strcat(platform_cfg_dir, "\\moused");
         return true;
+    }
 
     // Fallback 2: use current directory
-    GetCurrentDirectoryA(sizeof(platform_cfg_dir), platform_cfg_dir);
-    return true;
+    else
+    {
+        GetCurrentDirectoryA(sizeof(platform_cfg_dir), platform_cfg_dir);
+        strcat(platform_cfg_dir, "\\moused");
+        return true;
+    }
+    return false;
 }
 
 #elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
@@ -39,6 +50,6 @@ bool init_cfg_dir_properties()
 // unk sys
 #endif
 
-const char* cfg_path;
+const char *cfg_path;
 
 const int smoothmv_frametime = 4;
