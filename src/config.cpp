@@ -1,8 +1,8 @@
 #include <config.hpp>
 
-const int mainwindow_width = 480;
+const int mainwindow_width = 300;
 
-const int mainwindow_height = 320;
+const int mainwindow_height = 500;
 
 // global config directory buffer, static lifetime
 char platform_cfg_dir[512];

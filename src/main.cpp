@@ -1,25 +1,16 @@
-#include <cstdio>
-#undef NULL  // avoid conflict with keyboard::keys::NULL
 #include <adapter.hpp>
-#ifndef NULL
-#define NULL 0  // restore NULL for standard compliance
-#endif
 #include <ui.hpp>
 #include <config.hpp>
 #include <polkit_utils.hpp>
-// auto gen by slint
-// if error, just ignore
-#include <mainwindow.h>
-// toml11
 #include <toml.hpp>
-// luabridge
 extern "C"
 {
-     #include "lua.h"
-     #include "lauxlib.h"
-     #include "lualib.h"
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
 }
 #include "LuaBridge\LuaBridge.h"
+#include <iostream>
 
 using keys = keyboard::keys;
 
@@ -53,21 +44,7 @@ int main(int argc, char *argv[])
 
     // run uni init
     init_cfg_dir_properties();
-
-    ///*debug*/printf("${platform_cfg_dir}: %s\n", platform_cfg_dir);
-
-    // `mw` stands for `mainwindow`
-    /*
-    auto mw = MainWindow::create();
-    auto tray = Tray::create();
-    auto window_weak = slint::ComponentWeakHandle(mw);
-    mw->set_mainwindow_height(mainwindow_height);
-    mw->set_mainwindow_width(mainwindow_width);
-    mw->show();
-    tray->show();
-    slint::run_event_loop();
-    */
-   
+    
     /*debug only
     while(1) {
         if (keyboard::is_key_pressed(keys::L))
