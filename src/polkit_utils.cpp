@@ -1,4 +1,5 @@
 #include <polkit_utils.hpp>
+#include <utils.hpp>
 // avoid errors on win
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
 #include <stdio.h>
@@ -71,8 +72,8 @@ void polkit_root_getter(int argc, char* argv[])
         // pkexec failed (not installed / user cancelled / no desktop session)
         // fallback: suggest manual sudo/doas
         unlink(envfile);
-        fprintf(stderr, "moused: root required (need write access to /dev/uinput).\n");
-        fprintf(stderr, "  polkit elevation failed — run with: sudo moused\n");
+        log_msg("moused: root required (need write access to /dev/uinput).\n");
+        log_msg("  polkit elevation failed — run with: sudo moused\n");
         exit(1);
     }
 
@@ -167,7 +168,7 @@ void polkit_drop_privileges()
     // CAP_SETUID in its permitted set and could regain root if needed.
     if (seteuid(orig_uid) != 0)
     {
-        fprintf(stderr, "moused: warning: seteuid(%d) failed: %s\n",
+        log_msg("moused: warning: seteuid(%d) failed: %s\n",
                 orig_uid, strerror(errno));
     }
 }

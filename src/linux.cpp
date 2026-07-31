@@ -1,5 +1,6 @@
 #include <adapter.hpp>
 #include <config.hpp>
+#include <utils.hpp>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -83,8 +84,8 @@ bool platform_uinput_setup()
     // when `open()` occurs err, it'll ret negative val
     if (uinput_fd < 0)
     {
-        fprintf(stderr, "moused: cannot open /dev/uinput (need root). "
-                        "Run with sudo or as root.\n");
+        log_msg("moused: cannot open /dev/uinput (need root). "
+                "Run with sudo or as root.\n");
         return false;
     }
 
@@ -154,7 +155,7 @@ bool platform_uinput_setup()
 
     if (ioctl(uinput_fd, UI_DEV_CREATE) < 0)
     {
-        fprintf(stderr, "moused: UI_DEV_CREATE failed\n");
+        log_msg("moused: UI_DEV_CREATE failed\n");
         close(uinput_fd);
         uinput_fd = -1;
         return false;
@@ -465,7 +466,7 @@ bool platform_keyboard_capture_setup()
     DIR *input_dir = opendir("/dev/input/");
     if (!input_dir) // when err
     {
-        fprintf(stderr, "error occured when opening /dev/input\n");
+        log_msg("error occured when opening /dev/input\n");
         return false;
     }
 
@@ -498,7 +499,7 @@ bool platform_keyboard_capture_setup()
 
     if (keyboard_count == 0)
     {
-        fprintf(stderr, "moused: no keyboard devices found in /dev/input/\n");
+        log_msg("moused: no keyboard devices found in /dev/input/\n");
         return false;
     }
     return true;

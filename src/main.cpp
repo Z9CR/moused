@@ -1,6 +1,7 @@
 #include <adapter.hpp>
 #include <ui.hpp>
 #include <config.hpp>
+#include <utils.hpp>
 #include <polkit_utils.hpp>
 #include <toml.hpp>
 extern "C"
@@ -21,16 +22,16 @@ bool moused::OnInit()
     // even after we drop privileges.
     if (!platform_uinput_setup())
     {
-        fprintf(stderr, "moused: failed to initialize uinput device. "
-                        "Is the uinput kernel module loaded?\n");
+        log_msg("moused: failed to initialize uinput device. "
+                "Is the uinput kernel module loaded?\n");
         return false;
     }
 
     // init keyboard capture prog
     if (!platform_keyboard_capture_setup())
     {
-        fprintf(stderr, "moused: failed to initialize keyboard event device. "
-                        "Is the input kernel module loaded?\n");
+        log_msg("moused: failed to initialize keyboard event device. "
+                "Is the input kernel module loaded?\n");
         return false;
     }
 
@@ -40,10 +41,13 @@ bool moused::OnInit()
     // run uni init
     if (!init_cfg_dir_properties())
     {
-        fprintf(stderr, "moused: error occured when fetching config path");
+        log_msg("moused: error occured when fetching config path\n");
         return false;
     }
-
+    if (!mkdirs(platform_cfg_dir)) {
+        log_msg("moused: error occured when making config path\n");
+        return false;
+    }
     // run ui
     mainWindow *mw = new mainWindow("moused", mainwindow_width, mainwindow_height);
     mw->Show(true);

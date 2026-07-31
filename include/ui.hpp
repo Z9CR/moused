@@ -7,7 +7,8 @@ class mainWindow : public wxFrame
 public:
     mainWindow(const wxString &title, int winw, int winh);
 private:
-    void onQuit(wxCommandEvent &event);
+    void onQuit(wxCommandEvent &ev);
+    void openConfigDir(wxCommandEvent &ev);
 };
 
 // Define the Application Instance Container
