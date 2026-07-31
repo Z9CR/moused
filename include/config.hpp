@@ -8,6 +8,8 @@ extern const int mainwindow_height;
 // unit: px
 extern const int mainwindow_width;
 
+extern const char* mainwindow_title;
+
 // windows: `%APPDATA%/moused/`'s specific path
 // linux&bsds: `~/.config/moused/`'s specific~
 // macos: `~/Library/moused/`

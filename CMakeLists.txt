@@ -23,8 +23,6 @@ elseif(BSD)
     set(PLATFORM_SOURCES src/bsd.cpp src/polkit_utils.cpp)
 endif()
 
-add_executable(moused ${COMMON_SOURCES} ${PLATFORM_SOURCES} ${INCLUDES})
-
 include(FetchContent)
 # toml11
 FetchContent_Declare(
@@ -61,8 +59,30 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(LuaBridge)
 
+# wxWidget
+FetchContent_Declare(
+    wx
+    GIT_REPOSITORY https://github.com/wxWidgets/wxWidgets
+    GIT_TAG v3.3.3
+)
+# set compilation of `wxWidget` as `Static` force in case `DLL`(or SO) linking err
+set(wxBUILD_SHARED OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(wx)
 
+if(WIN32)
+    # when use macro `wxIMPLEMENT_APP(MyApp)`, the enter func is `WinMain`,
+    # but, MSVC expects enter func `main`, and theres no `main` inside, so we need to
+    # specify enter func
+    add_executable(moused WIN32 ${COMMON_SOURCES} ${PLATFORM_SOURCES} ${INCLUDES})
+elseif(APPLE)
+    # same
+    add_executable(moused MACOSX_BUNDLE ${COMMON_SOURCES} ${PLATFORM_SOURCES} ${INCLUDES})
+else()
+    add_executable(moused ${COMMON_SOURCES} ${PLATFORM_SOURCES} ${INCLUDES})
+endif()
+
+target_include_directories(moused PRIVATE ${INCLUDES_DIR})
 target_link_libraries(moused PRIVATE toml11::toml11)
 target_link_libraries(moused PRIVATE lua)
 target_link_libraries(moused PRIVATE LuaBridge)
-target_include_directories(moused PRIVATE ${INCLUDES_DIR})
+target_link_libraries(moused PRIVATE wx::core wx::base)

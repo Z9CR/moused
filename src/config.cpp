@@ -4,6 +4,8 @@ const int mainwindow_width = 300;
 
 const int mainwindow_height = 500;
 
+const char* mainwindow_title = "moused";
+
 // global config directory buffer, static lifetime
 // new but not delete to promise the static lifetime
 char* platform_cfg_dir = new char[1024];

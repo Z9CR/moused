@@ -10,14 +10,9 @@ extern "C"
 #include "lualib.h"
 }
 #include "LuaBridge/LuaBridge.h"
-// debug incs
-// #include <iostream>
-using keys = keyboard::keys;
 
-int main(int argc, char *argv[])
+bool moused::OnInit()
 {
-
-#pragma region init
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
     // Elevate to root (via pkexec if needed)
     polkit_root_getter(argc, argv);
@@ -28,7 +23,7 @@ int main(int argc, char *argv[])
     {
         fprintf(stderr, "moused: failed to initialize uinput device. "
                         "Is the uinput kernel module loaded?\n");
-        return 1;
+        return false;
     }
 
     // init keyboard capture prog
@@ -36,7 +31,7 @@ int main(int argc, char *argv[])
     {
         fprintf(stderr, "moused: failed to initialize keyboard event device. "
                         "Is the input kernel module loaded?\n");
-        return 1;
+        return false;
     }
 
     // Drop root so GUI runs under the original user's display session
@@ -46,12 +41,14 @@ int main(int argc, char *argv[])
     if (!init_cfg_dir_properties())
     {
         fprintf(stderr, "moused: error occured when fetching config path");
-        return 1;
+        return false;
     }
-#pragma endregion
-    // debug fetch platform_cfg_dir
-    // std::cout << platform_cfg_dir;
 
-    
-    return 0;
+    // run ui
+    mainwindow *mw = new mainwindow("moused");
+    mw->Show(true);
+    return true;
 }
+
+// Macro that generates the standard main() entry point execution block
+wxIMPLEMENT_APP(moused);
