@@ -45,7 +45,7 @@ bool moused::OnInit()
     }
 
     // run ui
-    mainwindow *mw = new mainwindow("moused");
+    mainWindow *mw = new mainWindow("moused", mainwindow_width, mainwindow_height);
     mw->Show(true);
     return true;
 }

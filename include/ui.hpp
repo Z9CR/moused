@@ -2,10 +2,12 @@
 #include <wx/wx.h>
 
 // Define the Main Window (Frame)
-class mainwindow : public wxFrame
+class mainWindow : public wxFrame
 {
 public:
-    mainwindow(const wxString &title);
+    mainWindow(const wxString &title, int winw, int winh);
+private:
+    void onQuit(wxCommandEvent &event);
 };
 
 // Define the Application Instance Container
