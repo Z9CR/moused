@@ -1,4 +1,6 @@
 #include <config.hpp>
+#include <utils.hpp>
+#include <filesystem>
 
 const int mainwindow_width = 300;
 
@@ -10,6 +12,9 @@ const char* mainwindow_title = "moused";
 // new but not delete to promise the static lifetime
 char* platform_cfg_dir = new char[1024];
 
+// cfg name
+const char* config_name = "config.toml";
+
 // get `const char* platform_cfg_dir`
 #if defined(_WIN32)
 // windows
@@ -17,6 +22,7 @@ char* platform_cfg_dir = new char[1024];
 #include <shlobj.h>
 #include <stdio.h>
 #include <cstring>
+
 // Fetch the Roaming AppData path, write into platform_cfg_dir
 // run it when init
 bool init_cfg_dir_properties()
@@ -102,6 +108,38 @@ bool init_cfg_dir_properties()
 #else
 // unk sys
 #endif
+
+
+bool touch_config_file(const char* parent_path, const char* name) {
+    // if the file already exists, do nothing
+    if (std::filesystem::exists(std::filesystem::path(parent_path) / name)) {
+        return true;
+    }
+
+    int need_len = snprintf(nullptr, 0, "%s/%s", parent_path, name);
+    if (need_len < 0) {
+        log_msg("snprintf calculation failed");
+        return false;
+    }
+
+    char* tmp = new char[need_len + 1];
+    if (tmp == nullptr) {
+        log_msg("memory allocation failed");
+        return false;
+    }
+
+    snprintf(tmp, need_len + 1, "%s/%s", parent_path, name);
+
+    FILE* f = fopen(tmp, "w");
+    if (f == nullptr) {
+        log_msg("err occured when touching %s", tmp);
+        delete[] tmp;
+        return false;
+    }
+    fclose(f);
+    delete[] tmp;
+    return true;
+}
 
 const char *cfg_path;
 

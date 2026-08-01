@@ -3,8 +3,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 
-bool mkdirs(char *path)
+bool mkdirs(const char *path)
 {
     std::error_code ec{};
     bool status = std::filesystem::create_directories(path, ec);

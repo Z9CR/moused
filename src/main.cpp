@@ -48,6 +48,11 @@ bool moused::OnInit()
         log_msg("moused: error occured when making config path\n");
         return false;
     }
+    if (!touch_config_file(platform_cfg_dir, config_name)) {
+        log_msg("moused: error occured when creating config file\n");
+        return false;
+    }
+
     // run ui
     mainWindow *mw = new mainWindow("moused", mainwindow_width, mainwindow_height);
     mw->Show(true);

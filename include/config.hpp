@@ -15,9 +15,11 @@ extern const char* mainwindow_title;
 // macos: `~/Library/moused/`
 extern char* platform_cfg_dir;
 
+extern const char* config_name;
+
 // use char* to avoid huuuuuuge STL
 // cfg_path should point to `${platform_cfg_dir}/moused/cfg`
-extern const char *cfg_path;
+extern const char* cfg_path;
 
 // when smooth moving,
 // prog will slice the path to dest into pieces,
@@ -32,3 +34,5 @@ extern const int smoothmv_frametime;
 // attention: the `\` or `/` is included in the tail
 // run it when init
 bool init_cfg_dir_properties();
+
+bool touch_config_file(const char* parent_path, const char* name);
