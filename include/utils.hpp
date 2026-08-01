@@ -1,6 +1,7 @@
 #pragma once
 
-bool mkdirs(const char* path);
+/// Create all directories in `path`. Throws std::filesystem_error on failure.
+void mkdirs(const char* path);
 
 /// Write a printf-style log message to the platform log file:
 ///   Windows: %TEMP%/moused.log

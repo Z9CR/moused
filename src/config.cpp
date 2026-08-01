@@ -2,6 +2,7 @@
 #include <utils.hpp>
 #include <filesystem>
 #include <fstream>
+#include <stdexcept>
 
 int mainwindow_width = 300;
 
@@ -25,30 +26,25 @@ const char* config_name = "config.toml";
 
 // Fetch the Roaming AppData path, write into platform_cfg_dir
 // run it when init
-bool init_cfg_dir_properties()
+void init_cfg_dir_properties()
 {
     // Primary: SHGetFolderPathA — ANSI, no conversion, no CoTaskMemFree
     if (SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, platform_cfg_dir) == S_OK)
     {
         std::strncat(platform_cfg_dir, "\\moused\\", sizeof(platform_cfg_dir) - std::strlen(platform_cfg_dir) - 1);
-        return true;
+        return;
     }
 
     // Fallback 1: use %APPDATA% env var
-    else if (GetEnvironmentVariableA("APPDATA", platform_cfg_dir, sizeof(platform_cfg_dir)) > 0)
+    if (GetEnvironmentVariableA("APPDATA", platform_cfg_dir, sizeof(platform_cfg_dir)) > 0)
     {
         std::strncat(platform_cfg_dir, "\\moused\\", sizeof(platform_cfg_dir) - std::strlen(platform_cfg_dir) - 1);
-        return true;
+        return;
     }
 
     // Fallback 2: use current directory
-    else
-    {
-        GetCurrentDirectoryA(sizeof(platform_cfg_dir), platform_cfg_dir);
-        std::strncat(platform_cfg_dir, "\\moused", sizeof(platform_cfg_dir) - std::strlen(platform_cfg_dir) - 1);
-        return true;
-    }
-    return false;
+    GetCurrentDirectoryA(sizeof(platform_cfg_dir), platform_cfg_dir);
+    std::strncat(platform_cfg_dir, "\\moused", sizeof(platform_cfg_dir) - std::strlen(platform_cfg_dir) - 1);
 }
 
 #elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
@@ -65,10 +61,9 @@ bool init_cfg_dir_properties()
 // Fetch the `~/.config/moused/`, write into platform_cfg_dir
 // Uses getpwuid to reliably get the user's home directory
 // even when running via pkexec/sudo (where HOME was set to /root)
-bool init_cfg_dir_properties()
+void init_cfg_dir_properties()
 {
     const char* home = nullptr;
-
     // When launched via pkexec/sudo, SUDO_UID / PKEXEC_UID tell us who
     // the real user is. Use getpwuid to reliably resolve their home dir
     // regardless of what $HOME currently says (privileges may already
@@ -101,9 +96,9 @@ bool init_cfg_dir_properties()
         cfg /= "moused";
         std::strncpy(platform_cfg_dir, cfg.c_str(), sizeof(platform_cfg_dir) - 1);
         platform_cfg_dir[sizeof(platform_cfg_dir) - 1] = '\0';
-        return true;
+        return;
     }
-    return false;
+    throw std::runtime_error("failed to fetch config path");
 }
 #elif defined(__APPLE__)
 // MacOS
@@ -112,20 +107,18 @@ bool init_cfg_dir_properties()
 #endif
 
 
-bool touch_config_file(const char* parent_path, const char* name) {
+void touch_config_file(const char* parent_path, const char* name) {
     // if the file already exists, do nothing
     std::filesystem::path cfg(parent_path);
     cfg /= name;
     if (std::filesystem::exists(cfg)) {
-        return true;
+        return;
     }
 
     std::ofstream out(cfg);
     if (!out) {
-        log_msg("err occured when touching `%s` in `%s`", name, parent_path);
-        return false;
+        throw std::runtime_error("failed to create config file");
     }
-    return true;
 }
 
 constexpr int smoothmv_frametime = 4;

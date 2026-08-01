@@ -29,9 +29,10 @@ extern const int smoothmv_frametime;
 // then write into platform_cfg_dir
 // attention: the `\` or `/` is included in the tail
 // run it when init
-bool init_cfg_dir_properties();
+// throws std::runtime_error on failure
+void init_cfg_dir_properties();
 
-bool touch_config_file(const char* parent_path, const char* name);
+void touch_config_file(const char* parent_path, const char* name);
 
 
 // declare luas
