@@ -13,22 +13,23 @@
  */
 typedef double angle;
 
+#include <enums_list.hpp>
+
 namespace mouse
 {
 
     enum mouse_btns
     {
-        LMB = 0, // MB1 in windows.h
-        RMB = 1, // MB2 in windows.h
-        MMB = 2, // MB3 in windows.h
-        XB1 = 3, // MB4 in windows.h
-        XB2 = 4  // MB5 in windows.h
+#define MOUSE_BTN_ITEM(name, value) name = value,
+        MOUSE_BTN_LIST(MOUSE_BTN_ITEM)
+#undef MOUSE_BTN_ITEM
     };
 
     enum wheel_rotations
     {
-        WU = 0, // WheelUp
-        WD = 1  // WheelDown
+#define WHEEL_ROTATION_ITEM(name, value) name = value,
+        WHEEL_ROTATION_LIST(WHEEL_ROTATION_ITEM)
+#undef WHEEL_ROTATION_ITEM
     };
 
     /// @brief translate cursor

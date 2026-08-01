@@ -36,3 +36,8 @@ extern const int smoothmv_frametime;
 bool init_cfg_dir_properties();
 
 bool touch_config_file(const char* parent_path, const char* name);
+
+
+// declare luas
+struct lua_State; 
+void register_script_enums(lua_State* L);
