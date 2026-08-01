@@ -3,6 +3,7 @@
 // avoid errors on win
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
 #include <stdio.h>
+#include <fstream>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,21 +48,20 @@ void polkit_root_getter(int argc, char* argv[])
         snprintf(envfile, sizeof(envfile), "/tmp/moused_env_%d", getuid());
 
         // Save original uid and critical display environment variables
-        FILE *f = fopen(envfile, "w");
+        std::ofstream f(envfile);
         if (f)
         {
-            fprintf(f, "MU_ORIG_UID=%d\n", getuid());
+            f << "MU_ORIG_UID=" << getuid() << '\n';
 
             const char *vars[] = {"DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY",
                                   "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS",
                                   "HOME", nullptr};
-            for (const char **vp = vars; *vp; vp++)
+            for (const char **vp = vars; *vp; ++vp)
             {
                 const char *val = getenv(*vp);
                 if (val)
-                    fprintf(f, "%s=%s\n", *vp, val);
+                    f << *vp << '=' << val << '\n';
             }
-            fclose(f);
         }
 
         // Restrict permissions so only this user (and root) can read it
@@ -101,17 +101,13 @@ void polkit_root_getter(int argc, char* argv[])
             snprintf(envfile, sizeof(envfile), "/tmp/moused_env_1000");
         }
 
-        FILE *f = fopen(envfile, "r");
+        std::ifstream f(envfile);
         if (f)
         {
             char line[1024];
-            while (fgets(line, sizeof(line), f))
+            while (f.getline(line, sizeof(line)))
             {
-                // Strip trailing newline
-                size_t len = strlen(line);
-                if (len > 0 && line[len - 1] == '\n')
-                    line[len - 1] = '\0';
-
+                // getline() strips the trailing newline
                 char *eq = strchr(line, '=');
                 if (eq)
                 {
@@ -131,7 +127,6 @@ void polkit_root_getter(int argc, char* argv[])
                     }
                 }
             }
-            fclose(f);
             unlink(envfile);
 
             // HOME is now saved & restored via the envfile mechanism above

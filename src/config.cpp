@@ -1,16 +1,16 @@
 #include <config.hpp>
 #include <utils.hpp>
 #include <filesystem>
+#include <fstream>
 
-const int mainwindow_width = 300;
+int mainwindow_width = 300;
 
-const int mainwindow_height = 500;
+int mainwindow_height = 500;
 
 const char* mainwindow_title = "moused";
 
-// global config directory buffer, static lifetime
-// new but not delete to promise the static lifetime
-char* platform_cfg_dir = new char[1024];
+// global config directory buffer, fixed size, static lifetime
+char platform_cfg_dir[1024];
 
 // cfg name
 const char* config_name = "config.toml";
@@ -30,14 +30,14 @@ bool init_cfg_dir_properties()
     // Primary: SHGetFolderPathA — ANSI, no conversion, no CoTaskMemFree
     if (SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, platform_cfg_dir) == S_OK)
     {
-        strcat(platform_cfg_dir, "\\moused\\");
+        std::strncat(platform_cfg_dir, "\\moused\\", sizeof(platform_cfg_dir) - std::strlen(platform_cfg_dir) - 1);
         return true;
     }
 
     // Fallback 1: use %APPDATA% env var
     else if (GetEnvironmentVariableA("APPDATA", platform_cfg_dir, sizeof(platform_cfg_dir)) > 0)
     {
-        strcat(platform_cfg_dir, "\\moused\\");
+        std::strncat(platform_cfg_dir, "\\moused\\", sizeof(platform_cfg_dir) - std::strlen(platform_cfg_dir) - 1);
         return true;
     }
 
@@ -45,7 +45,7 @@ bool init_cfg_dir_properties()
     else
     {
         GetCurrentDirectoryA(sizeof(platform_cfg_dir), platform_cfg_dir);
-        strcat(platform_cfg_dir, "\\moused");
+        std::strncat(platform_cfg_dir, "\\moused", sizeof(platform_cfg_dir) - std::strlen(platform_cfg_dir) - 1);
         return true;
     }
     return false;
@@ -96,9 +96,11 @@ bool init_cfg_dir_properties()
     }
 
     if (home) {
-        strncpy(platform_cfg_dir, home, 1023);
-        platform_cfg_dir[1023] = '\0';
-        strncat(platform_cfg_dir, "/.config/moused/", 1023 - strlen(platform_cfg_dir));
+        std::filesystem::path cfg{home};
+        cfg /= ".config";
+        cfg /= "moused";
+        std::strncpy(platform_cfg_dir, cfg.c_str(), sizeof(platform_cfg_dir) - 1);
+        platform_cfg_dir[sizeof(platform_cfg_dir) - 1] = '\0';
         return true;
     }
     return false;
@@ -112,35 +114,18 @@ bool init_cfg_dir_properties()
 
 bool touch_config_file(const char* parent_path, const char* name) {
     // if the file already exists, do nothing
-    if (std::filesystem::exists(std::filesystem::path(parent_path) / name)) {
+    std::filesystem::path cfg(parent_path);
+    cfg /= name;
+    if (std::filesystem::exists(cfg)) {
         return true;
     }
 
-    int need_len = snprintf(nullptr, 0, "%s/%s", parent_path, name);
-    if (need_len < 0) {
-        log_msg("snprintf calculation failed");
+    std::ofstream out(cfg);
+    if (!out) {
+        log_msg("err occured when touching `%s` in `%s`", name, parent_path);
         return false;
     }
-
-    char* tmp = new char[need_len + 1];
-    if (tmp == nullptr) {
-        log_msg("memory allocation failed");
-        return false;
-    }
-
-    snprintf(tmp, need_len + 1, "%s/%s", parent_path, name);
-
-    FILE* f = fopen(tmp, "w");
-    if (f == nullptr) {
-        log_msg("err occured when touching %s", tmp);
-        delete[] tmp;
-        return false;
-    }
-    fclose(f);
-    delete[] tmp;
     return true;
 }
 
-const char *cfg_path;
-
-const int smoothmv_frametime = 4;
+constexpr int smoothmv_frametime = 4;
