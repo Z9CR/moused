@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <fstream>
 
-void mkdirs(const char *path)
+void mkdirs(const std::string &path)
 {
     std::error_code ec{};
     if (!std::filesystem::create_directories(path, ec) && ec)
@@ -14,21 +14,18 @@ void mkdirs(const char *path)
 
 void log_msg(const char* fmt, ...)
 {
-    static const char* log_path = nullptr;
-    if (!log_path)
+    static const std::string log_path = []
     {
 #ifdef _WIN32
-        static char path[1024];
         const char* tmp = std::getenv("TEMP");
         if (!tmp) tmp = std::getenv("TMP");
-        std::snprintf(path, sizeof(path), "%s\\moused.log", tmp ? tmp : ".");
-        log_path = path;
+        return std::string(tmp ? tmp : ".") + "\\moused.log";
 #else
-        log_path = "/tmp/moused.log";
+        return std::string("/tmp/moused.log");
 #endif
-    }
+    }();
 
-    FILE* f = std::fopen(log_path, "a");
+    FILE* f = std::fopen(log_path.c_str(), "a");
     if (!f) return;
 
     va_list args;

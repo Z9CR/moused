@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <fstream>
 #include <stdexcept>
+#include <string>
 #include <system_error>
 #include <unistd.h>
 #include <stdlib.h>
@@ -16,9 +17,9 @@
 /// find absolute path of current executable
 /// on Linux uses /proc/self/exe, on BSDs uses realpath(argv[0])
 /// unix & unix-likes only!
-static const char *get_exe_path(const char *argv0)
+static std::string get_exe_path(const char *argv0)
 {
-    static char path[PATH_MAX];
+    char path[PATH_MAX];
 
 #if defined(__linux__)
     // Linux: /proc/self/exe is always reliable
@@ -26,14 +27,14 @@ static const char *get_exe_path(const char *argv0)
     if (len != -1)
     {
         path[len] = '\0';
-        return path;
+        return std::string(path);
     }
 #endif
     // BSDs / fallback: resolve argv[0]
     if (realpath(argv0, path))
-        return path;
+        return std::string(path);
 
-    return argv0; // last resort
+    return std::string(argv0); // last resort
 }
 
 // the program must have privilege in Linux and BSDs to RW /dev/uinput(Linux) or /dev/wsmouse(BSDs)
@@ -43,11 +44,10 @@ void polkit_root_getter(int argc, char* argv[])
     {
         // We are a normal user. Save the display environment and then
         // re-execute ourselves via pkexec so we can open /dev/uinput.
-        const char *me = get_exe_path(argc > 0 ? argv[0] : "moused");
+        std::string me = get_exe_path(argc > 0 ? argv[0] : "moused");
 
         // Choose a private temp path
-        char envfile[256];
-        snprintf(envfile, sizeof(envfile), "/tmp/moused_env_%d", getuid());
+        std::string envfile = "/tmp/moused_env_" + std::to_string(getuid());
 
         // Save original uid and critical display environment variables
         std::ofstream f(envfile);
@@ -67,13 +67,13 @@ void polkit_root_getter(int argc, char* argv[])
         }
 
         // Restrict permissions so only this user (and root) can read it
-        chmod(envfile, 0600);
+        chmod(envfile.c_str(), 0600);
 
-        execlp("pkexec", "pkexec", me, "--restore-env", (char *)NULL);
+        execlp("pkexec", "pkexec", me.c_str(), "--restore-env", (char *)NULL);
 
         // pkexec failed (not installed / user cancelled / no desktop session)
         // fallback: suggest manual sudo/doas
-        unlink(envfile);
+        unlink(envfile.c_str());
         throw std::runtime_error(
             "root required (need write access to /dev/uinput). "
             "polkit elevation failed — run with: sudo moused");
@@ -91,45 +91,44 @@ void polkit_root_getter(int argc, char* argv[])
         if (sudo_uid) orig_uid = (uid_t)atoi(sudo_uid);
         else if (pkexec_uid) orig_uid = (uid_t)atoi(pkexec_uid);
 
-        char envfile[256];
+        std::string envfile;
         if (orig_uid != (uid_t)-1)
         {
-            snprintf(envfile, sizeof(envfile), "/tmp/moused_env_%u", orig_uid);
+            envfile = "/tmp/moused_env_" + std::to_string(orig_uid);
         }
         else
         {
             // Fallback: scan /tmp for moused_env_* files
             // For simplicity, try the most likely uid (1000 is common first desktop user)
-            snprintf(envfile, sizeof(envfile), "/tmp/moused_env_1000");
+            envfile = "/tmp/moused_env_1000";
         }
 
         std::ifstream f(envfile);
         if (f)
         {
-            char line[1024];
-            while (f.getline(line, sizeof(line)))
+            std::string line;
+            while (std::getline(f, line))
             {
                 // getline() strips the trailing newline
-                char *eq = strchr(line, '=');
-                if (eq)
+                auto eq = line.find('=');
+                if (eq != std::string::npos)
                 {
-                    *eq = '\0';
-                    const char *key = line;
-                    const char *val = eq + 1;
+                    std::string key = line.substr(0, eq);
+                    std::string val = line.substr(eq + 1);
 
-                    if (strcmp(key, "MU_ORIG_UID") == 0)
+                    if (key == "MU_ORIG_UID")
                     {
-                        orig_uid = (uid_t)atoi(val);
+                        orig_uid = (uid_t)std::atoi(val.c_str());
                     }
                     else
                     {
                         // Restore environment variable (overwrite pkexec's root env
                         // with the original user's values)
-                        setenv(key, val, 1);
+                        setenv(key.c_str(), val.c_str(), 1);
                     }
                 }
             }
-            unlink(envfile);
+            unlink(envfile.c_str());
 
             // HOME is now saved & restored via the envfile mechanism above
         }

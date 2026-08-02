@@ -35,9 +35,9 @@ void mainWindow::onQuit(wxCommandEvent &) {
 }
 
 void mainWindow::openConfigDir(wxCommandEvent &) {
-    if(!wxDirExists(platform_cfg_dir)) {
-        log_msg("moused: file `%s` not found\n", platform_cfg_dir);
+    if(!wxDirExists(platform_cfg_dir.c_str())) {
+        log_msg("moused: file `%s` not found\n", platform_cfg_dir.c_str());
     }
     else
-        wxLaunchDefaultApplication(platform_cfg_dir);
+        wxLaunchDefaultApplication(platform_cfg_dir.c_str());
 }

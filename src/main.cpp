@@ -32,11 +32,13 @@ bool moused::OnInit()
         polkit_drop_privileges();
 #endif
         // run uni init
+        // errs were catched by `try`
         init_cfg_dir_properties();
         mkdirs(platform_cfg_dir);
         touch_config_file(platform_cfg_dir, config_name);
+        refresh_config();
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         log_msg("moused: %s\n", e.what());
         return false;
