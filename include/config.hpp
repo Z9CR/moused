@@ -30,7 +30,8 @@ extern const std::string config_name;
 // prog will slice the path to dest into pieces,
 // and the value below is how long will stay in per pieces
 // unit: ms
-extern const int smoothmv_frametime;
+// parsed from [global].smooth_frametime_ms,thus mutable at runtime
+extern int smoothmv_frametime;
 
 extern std::vector<key_property> keys_properties;
 
@@ -46,7 +47,3 @@ void init_cfg_dir_properties();
 void touch_config_file(const std::string &parent_path, const std::string &name);
 
 void refresh_config();
-
-// declare luas
-struct lua_State;
-void register_script_enums(lua_State *L);

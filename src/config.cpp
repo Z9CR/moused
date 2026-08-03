@@ -14,7 +14,7 @@ int mainwindow_width = 300;
 
 int mainwindow_height = 500;
 
-constexpr int smoothmv_frametime = 4;
+int smoothmv_frametime = 4;
 
 const std::string mainwindow_title = "moused";
 
@@ -170,40 +170,62 @@ void refresh_config()
     std::filesystem::path cfg(platform_cfg_dir);
     cfg /= config_name;
     toml::value _props = toml::parse(cfg.string());
+    // reset to defaults before re-parsing, so repeated calls don't accumulate
+    // fallbacks
+    mainwindow_width = 300;
+    mainwindow_height = 500;
+    smoothmv_frametime = 4;
+    keys_properties.clear();
     if (_props.is_empty())
-    {
-        keys_properties.clear();
         return;
-    }
-    const auto &props = _props.as_table();
+    const auto& props = _props.as_table();
+    // gen keyboard::keys->string map
+    const struct
+    {
+        int k;
+        std::string v;
+    } table[] = {
+#define KEYS_ITEM(name, value) {value, #name},
+        KEYS_LIST(KEYS_ITEM)
+    // {0, "NULL"},
+#undef KEYS_ITEM
+    };
     for (const auto &[key, val] : props)
     {
         // fetch global
         if (key == "global")
         {
+            const auto &global = val.as_table();
+            mainwindow_width = static_cast<int>(global.at("window_width").as_integer());
+            mainwindow_height = static_cast<int>(global.at("window_height").as_integer());
+            smoothmv_frametime = static_cast<int>(global.at("smooth_frametime_ms").as_integer());
+            continue;
         }
         // every profile of a key should be a table
         if (!val.is_table())
         {
-            throw std::runtime_error(std::format("moused: error occured when parsing config file `{}`, \nerror key is `{}`", cfg.string(), key));
-            return;
+            throw std::runtime_error(std::format("moused: error occurred when parsing config file `{}`", cfg.string()));
         }
         // sub table of the key
         const auto &key_profile = val.as_table();
         // 2 structures to save profile temporally
         loopment _loopment{};
         key_property _property{};
-        // gen keyboard::keys->int map
-        const struct
+        // map the toml table-name (e.g. "L", "F1") to the keyboard key
+        bool matched = false;
+        for (const auto &item : table)
         {
-            std::string_view k;
-            int val;
-        } table[] = {
-#define KEYS_ITEM(name, value) {#name, value},
-            KEYS_LIST(KEYS_ITEM)
-#undef KEYS_ITEM
+            if (item.v == key)
+            {
+                _property.key = static_cast<keyboard::keys>(item.k);
+                matched = true;
+                break;
+            }
         }
-
+        if (!matched)
+        {
+            throw std::runtime_error(std::format("moused: unknown key `{}` in config file `{}`", key, cfg.string()));
+        }
         /*
         [key]
         enabled = <bool>
@@ -214,5 +236,20 @@ void refresh_config()
         times = <int>
         delay = <double>
         */
+        _property.enabled = key_profile.at("enabled").as_boolean();
+        if (key_profile.at("type").as_string() == "file")
+            _property.type = script_type::file;
+        else
+            _property.type = script_type::in_line;
+        _property.code = key_profile.at("val").as_string();
+
+        // [key.loop] sub table
+        const auto &loop = key_profile.at("loop").as_table();
+        _loopment.enabled = loop.at("enabled").as_boolean();
+        _loopment.times = static_cast<unsigned long long>(loop.at("times").as_integer());
+        _loopment.delay = loop.at("delay").as_floating();
+
+        _property.loop = _loopment;
+        keys_properties.push_back(_property);
     }
 }
