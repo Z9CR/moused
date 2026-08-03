@@ -15,14 +15,12 @@ typedef double angle;
 
 #include <enums_list.hpp>
 
-// `NULL` is both a macro (defined by <cstddef>, pulled in transitively by
-// many standard headers) and the name of an enumerator below.
-// On MSVC the macro expands to `0`, which would break the `NULL = 0` member,
-// so it must be undefined before the enum is declared. The original value is
-// restored at the end of this header so we do not leak the change.
-#ifdef NULL
-#undef NULL
-#define MOUSED_NULL_DEFINED
+// The enumerator `DELETE` below collides with Windows.h's `DELETE` macro
+// (0x00010000L), which wxWidgets pulls in transitively (ui.hpp -> wx/wx.h).
+// Save & undefine it before the enums, restore the original value afterwards.
+#ifdef DELETE
+#define MOUSED_DELETE_BAK DELETE
+#undef DELETE
 #endif
 
 namespace mouse

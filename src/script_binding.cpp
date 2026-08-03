@@ -33,8 +33,7 @@ static void bind_mouse_btn(lua_State *L)
     for (const auto &e : table)
     {
         lua_pushinteger(L, e.btn);
-        lua_pushlstring(L, e.name.data(), e.name.size()); // push key
-        lua_settable(L, -3);                              // mouse_btn[key] = <enum_val>
+        lua_setfield(L, -2, e.name.data());               // mouse_btn[name] = <enum_val>
     }
     lua_setglobal(L, "mouse_btn");
 }
@@ -56,10 +55,31 @@ static void bind_wheel_rotation(lua_State *L)
     for (const auto &e : table)
     {
         lua_pushinteger(L, e.rot);
-        lua_pushlstring(L, e.name.data(), e.name.size()); // push key
-        lua_settable(L, -3);                              // wheel_rotation[key] = <enum_val>
+        lua_setfield(L, -2, e.name.data());               // wheel_rotation[name] = <enum_val>
     }
     lua_setglobal(L, "wheel_rotation");
+}
+
+static void bind_command(lua_State *L)
+{
+// generate { "translate", 0 }, { "move_to", 1 }, ...
+#define COMMAND_BIND_ITEM(name, value) {#name, value},
+
+    static const struct
+    {
+        std::string_view name;
+        int cmd;
+    } table[] = {
+        COMMAND_LIST(COMMAND_BIND_ITEM)};
+#undef COMMAND_BIND_ITEM
+
+    lua_newtable(L);
+    for (const auto &e : table)
+    {
+        lua_pushinteger(L, e.cmd);
+        lua_setfield(L, -2, e.name.data()); // cmd[name] = <enum_val>
+    }
+    lua_setglobal(L, "cmd");
 }
 
 static void bind_keys(lua_State *L)
@@ -89,5 +109,6 @@ void register_script_enums(lua_State *L)
 {
     bind_mouse_btn(L);
     bind_wheel_rotation(L);
+    bind_command(L);
     bind_keys(L);
 }

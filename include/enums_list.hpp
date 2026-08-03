@@ -18,6 +18,16 @@
     X(WD, 1) /* WheelDown */
 #pragma endregion
 
+#pragma region COMMAND_LIST
+#define COMMAND_LIST(X) \
+    X(translate, 0)     \
+    X(move_to, 1)       \
+    X(click, 2)         \
+    X(press, 3)         \
+    X(release, 4)       \
+    X(wheel, 5)
+#pragma endregion
+
 #pragma region KEYS_LIST
 #define KEYS_LIST(X)      \
     X(NONE, 0)            \

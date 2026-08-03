@@ -1,0 +1,146 @@
+# this is the default properties ver 8/3/2026
+
+#
+# a template hotkey-properties should like that
+# [key]
+# enabled = <bool>
+# type = 'inline' or 'file'
+# val = """lua code(if type='inline')""" or 'file path(if type='file')'
+# [key.loop]
+# enabled = <bool>
+# times = <int>
+# # times = -1: infinity loop
+# delay = <double>
+# # delay unit: ms
+#
+
+#
+# the code (whether in file or inline) must contain a function called
+# `run()` that RETURNS AN ARRAY of instruction-tables:
+#
+#   return {
+#       {cmd = <cmd>, args = {<double>, <double>, ...}, delay = <double>},
+#       ...
+#   }
+#
+# - `args` are all Lua numbers (doubles); the C++ side casts them to
+#   whatever type each adapter function needs.
+#   Per-command argument lists:
+#       translate:  {angle(deg), distant(px), time_ms?}
+#       move_to:    {x(px), y(px), time_ms?}
+#       click:      {mouse_btn.*}
+#       press:      {mouse_btn.*}
+#       release:    {mouse_btn.*}
+#       wheel:      {wheel_rotation.*, scale}
+# - `delay` is OPTIONAL (measured in ms): the time to wait BEFORE this
+#   instruction. When omitted, it falls back to 0.0.
+#   The examples below always write it out explicitly — that is the
+#   canonical template form.
+#
+# tip:
+#   mouse_btn.LMB, mouse_btn.RMB, mouse_btn.MMB, mouse_btn.XB1, mouse_btn.XB2,
+#   wheel_rotation.WU, wheel_rotation.WD
+# are declared beforehand for mouse commands
+#
+
+[global]
+window_width = 300
+window_height = 500
+# when smooth moving,
+# prog will slice the path to dest into pieces,
+# and the value below is how long will stay in per pieces
+# unit: ms
+smooth_frametime_ms = 4
+
+[L]
+enabled = false
+type = 'inline'
+val = """
+    function run()
+        return {
+            {cmd = cmd.translate, args = {0.0, 32, 10}, delay = 0.0},
+        }
+    end
+"""
+[L.loop]
+enabled = false
+times = 0
+delay = 0.0
+
+[J]
+enabled = false
+type = 'inline'
+val = """
+    function run()
+        return {
+            {cmd = cmd.translate, args = {90.0, 32, 10}, delay = 0.0},
+        }
+    end
+"""
+[J.loop]
+enabled = false
+times = 0
+delay = 0.0
+
+[H]
+enabled = false
+type = 'inline'
+val = """
+    function run()
+        return {
+            {cmd = cmd.translate, args = {180.0, 32, 10}, delay = 0.0},
+        }
+    end
+"""
+[H.loop]
+enabled = false
+times = 0
+delay = 0.0
+
+[K]
+enabled = false
+type = 'inline'
+val = """
+    function run()
+        return {
+            {cmd = cmd.translate, args = {270.0, 32, 10}, delay = 0.0},
+        }
+    end
+"""
+[K.loop]
+enabled = false
+times = 0
+delay = 0.0
+
+[F1]
+enabled = false
+type = 'inline'
+val = """
+    function run()
+        return {
+            {cmd = cmd.click, args = {mouse_btn.LMB}, delay = 0.0},
+        }
+    end
+"""
+[F1.loop]
+enabled = true
+times = -1
+delay = 0.05
+
+[F12]
+enabled = false
+type = 'inline'
+val = """
+    function run()
+        -- a complex macro: multiple instructions, each with an explicit delay
+        return {
+            {cmd = cmd.click,     args = {mouse_btn.LMB},         delay = 0.0},
+            {cmd = cmd.wheel,     args = {wheel_rotation.WU, 1.0}, delay = 100.0},
+            {cmd = cmd.translate, args = {0.0, 32, 10},           delay = 50.0},
+        }
+    end
+"""
+[F12.loop]
+enabled = false
+times = 0
+delay = 0.0

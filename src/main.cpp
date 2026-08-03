@@ -2,8 +2,12 @@
 #include <ui.hpp>
 #include <config.hpp>
 #include <utils.hpp>
+#include <macro.hpp>
+#include <script_binding.hpp>
 #include <polkit_utils.hpp>
 #include <toml.hpp>
+#include <fstream>
+#include <iterator>
 #include <stdexcept>
 extern "C"
 {
@@ -44,8 +48,8 @@ bool moused::OnInit()
         return false;
     }
 
-    //debug
     /*
+    #pragma region debug
     for (const auto &prop : keys_properties)
     {
         log_msg("common\n");
@@ -59,10 +63,17 @@ bool moused::OnInit()
         log_msg("times: %llu\n", prop.loop.times);
         log_msg("\n");
     }
+
+    // debug only: read every hotkey's Lua script and parse it into commands
+    test_parse_lua_config();
+
+    #pragma endregion
     */
+    
     // run ui
     mainWindow *mw = new mainWindow("moused", mainwindow_width, mainwindow_height);
     mw->Show(true);
+    
     return true;
 }
 
