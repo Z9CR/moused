@@ -44,6 +44,22 @@ bool moused::OnInit()
         return false;
     }
 
+    //debug
+    /*
+    for (const auto &prop : keys_properties)
+    {
+        log_msg("common\n");
+        log_msg("enabled: %d\n", prop.enabled);
+        log_msg("key: %d\n", static_cast<int>(prop.key));
+        log_msg("script_type: %d\n", static_cast<int>(prop.type));
+        log_msg("code: %s\n", prop.code.c_str());
+        log_msg("loop\n");
+        log_msg("enabled: %d\n", prop.loop.enabled);
+        log_msg("delay: %f\n", prop.loop.delay);
+        log_msg("times: %llu\n", prop.loop.times);
+        log_msg("\n");
+    }
+    */
     // run ui
     mainWindow *mw = new mainWindow("moused", mainwindow_width, mainwindow_height);
     mw->Show(true);

@@ -1,8 +1,8 @@
-#include <adapter.hpp>
+﻿#include <adapter.hpp>
 #include <config.hpp>
 #include <Windows.h>
 #ifdef NULL
-#undef NULL   // Windows.h defines NULL as 0 — we need it for keys::NULL
+#undef NULL   // Windows.h defines NULL as 0 — we need it for keys::NONE
 #endif
 #ifdef DELETE
 #undef DELETE // Windows.h defines DELETE as 0x00010000L — we need it for keys::DELETE
@@ -368,7 +368,7 @@ namespace keyboard
             break;
         }
 
-        return keys::NULL; // unmapped
+        return keys::NONE; // unmapped
     }
 
     keys get_key_pressed()
@@ -380,10 +380,10 @@ namespace keyboard
             if (!(GetAsyncKeyState(vk) & 0x8000))
                 continue;
             keys k = vk2keys(vk);
-            if (k != keys::NULL)
+            if (k != keys::NONE)
                 return k;
         }
-        return keys::NULL;
+        return keys::NONE;
     }
 
     bool is_key_pressed(keys key)

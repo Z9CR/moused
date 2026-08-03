@@ -70,8 +70,7 @@ static void bind_keys(lua_State *L)
         std::string_view name;
         int key;
     } table[]{
-        // X(NULL, 0)
-        // {"NULL", 0}
+        // X(NONE, 0) is generated & bound to Lua as keys.NONE
         KEYS_LIST(KEY_BIND_ITEM)};
 #undef KEY_BIND_ITEM
 

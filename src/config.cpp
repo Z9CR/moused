@@ -121,30 +121,6 @@ void init_cfg_dir_properties()
 #endif
 #pragma endregion
 
-enum class script_type
-{
-    in_line = 0,
-    file = 1
-};
-
-struct loopment
-{
-    bool enabled;
-    // when `-1`, it will be casted into `18446744073709551615`
-    unsigned long long times;
-    // unit: ms
-    double delay;
-};
-
-struct key_property
-{
-    keyboard::keys key;
-    bool enabled;
-    script_type type;
-    std::string code;
-    loopment loop;
-};
-
 // this var to store properties
 std::vector<key_property> keys_properties{};
 

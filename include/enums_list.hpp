@@ -20,7 +20,7 @@
 
 #pragma region KEYS_LIST
 #define KEYS_LIST(X)      \
-    X(NULL, 0)            \
+    X(NONE, 0)            \
     X(APOSTROPHE, 39)     \
     X(COMMA, 44)          \
     X(MINUS, 45)          \

@@ -2,14 +2,34 @@
 // we will store these props in a file in the future
 // thus, just temporally store them in .c
 
+#include <adapter.hpp>
 #include <string>
 #include <vector>
 
-enum class script_type;
+// the type of a hotkey's bound script
+enum class script_type
+{
+    in_line = 0,
+    file = 1
+};
 
-struct loopment;
+struct loopment
+{
+    bool enabled;
+    // when `-1`, it will be casted into `18446744073709551615`
+    unsigned long long times;
+    // unit: ms
+    double delay;
+};
 
-struct key_property;
+struct key_property
+{
+    keyboard::keys key;
+    bool enabled;
+    script_type type;
+    std::string code;
+    loopment loop;
+};
 
 // unit: px
 extern int mainwindow_height;

@@ -1,4 +1,4 @@
-#include <adapter.hpp>
+﻿#include <adapter.hpp>
 #include <config.hpp>
 #include <utils.hpp>
 #include <cmath>
@@ -13,7 +13,7 @@
 #include <linux/uinput.h>
 
 #ifdef NULL
-#undef NULL // Linux headers define NULL as `((void*)0)` (in C: __null, but we're coding with CPP) — we need it for keys::NULL
+#undef NULL // Linux headers define NULL as `((void*)0)` (in C: __null, but we're coding with CPP) — we need it for keys::NONE
 #endif
 
 #pragma region define &include
@@ -679,7 +679,7 @@ static keys linux_keycode_to_keys(int code)
     default:
         break;
     }
-    return keys::NULL;
+    return keys::NONE;
 }
 
 // reverse map: keys enum to Linux key code (mirrors Windows' is_key_pressed reverse map)
@@ -815,17 +815,17 @@ namespace keyboard
                 if (key_b[code / 8] & (1 << (code % 8)))
                 {
                     keys k = linux_keycode_to_keys(code);
-                    if (k != keys::NULL)
+                    if (k != keys::NONE)
                         return k;
                 }
             }
         }
-        return keys::NULL;
+        return keys::NONE;
     }
 
     bool is_key_pressed(keys key)
     {
-        if (key == keys::NULL)
+        if (key == keys::NONE)
             return false;
 
         int linux_code = keys_to_linux_keycode(key);

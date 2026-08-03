@@ -101,9 +101,8 @@ namespace keyboard
     bool is_key_pressed(keys key);
 }
 
-#ifdef MOUSED_NULL_DEFINED
-#ifndef NULL
-#define NULL 0
+#ifdef MOUSED_DELETE_BAK
+#define DELETE MOUSED_DELETE_BAK
+#undef MOUSED_DELETE_BAK
 #endif
-#undef MOUSED_NULL_DEFINED
-#endif
+
