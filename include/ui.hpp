@@ -16,4 +16,5 @@ class moused : public wxApp
 {
 public:
     virtual bool OnInit() override;
+    virtual int OnExit() override;
 };

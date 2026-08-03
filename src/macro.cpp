@@ -1,7 +1,12 @@
+#include <adapter.hpp>
+#include <config.hpp>
 #include <macro.hpp>
+#include <condition_variable>
+#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <format>
+#include <thread>
 
 extern "C"
 {
@@ -25,6 +30,12 @@ namespace
         double v = lua_tonumber(L, -1);
         lua_pop(L, 1);
         return v;
+    }
+
+    // extract the double at index i from args, falling back to 0 when absent
+    double arg_at(const command &cmd, std::size_t i)
+    {
+        return i < cmd.args.size() ? cmd.args[i] : 0.0;
     }
 } // namespace
 
@@ -92,4 +103,101 @@ macro_script parse_lua_result(lua_State *L)
     // pop the returned table; stack is back to its pre-call height
     lua_pop(L, 1);
     return script;
+}
+
+void dispatch_command(const command &cmd)
+{
+    switch (cmd.type)
+    {
+    case command_type::translate:
+        if (cmd.args.size() >= 3)
+            mouse::translate(static_cast<angle>(arg_at(cmd, 0)),
+                             static_cast<int>(arg_at(cmd, 1)),
+                             static_cast<unsigned int>(arg_at(cmd, 2)));
+        else
+            mouse::translate(static_cast<angle>(arg_at(cmd, 0)),
+                             static_cast<int>(arg_at(cmd, 1)));
+        break;
+    case command_type::move_to:
+        if (cmd.args.size() >= 3)
+            mouse::move_to(static_cast<unsigned int>(arg_at(cmd, 0)),
+                           static_cast<unsigned int>(arg_at(cmd, 1)),
+                           static_cast<unsigned int>(arg_at(cmd, 2)));
+        else
+            mouse::move_to(static_cast<unsigned int>(arg_at(cmd, 0)),
+                           static_cast<unsigned int>(arg_at(cmd, 1)));
+        break;
+    case command_type::click:
+        mouse::click(static_cast<mouse::mouse_btns>(static_cast<int>(arg_at(cmd, 0))));
+        break;
+    case command_type::press:
+        mouse::press(static_cast<mouse::mouse_btns>(static_cast<int>(arg_at(cmd, 0))));
+        break;
+    case command_type::release:
+        mouse::release(static_cast<mouse::mouse_btns>(static_cast<int>(arg_at(cmd, 0))));
+        break;
+    case command_type::wheel:
+        mouse::wheel(static_cast<mouse::wheel_rotations>(static_cast<int>(arg_at(cmd, 0))),
+                     arg_at(cmd, 1));
+        break;
+    }
+}
+
+bool wait_for_or_stop(std::stop_token st, double ms)
+{
+    if (ms <= 0.0)
+        return !st.stop_requested();
+
+    static std::mutex mtx;
+    static std::condition_variable_any cv;
+    std::unique_lock<std::mutex> lk(mtx);
+    // wait_for returns cv_status::timeout on full delay, no_timeout if notified.
+    return !cv.wait_for(lk, st, std::chrono::duration<double, std::milli>(ms),
+                        [] { return false; });
+}
+
+void run_macro_script(std::stop_token st, const macro_script &script,
+                      const struct loopment &loop)
+{
+    auto run_once = [&]() -> bool
+    {
+        for (const auto &cmd : script)
+        {
+            if (st.stop_requested())
+                return false;
+            if (!wait_for_or_stop(st, cmd.delay))
+                return false;
+            dispatch_command(cmd);
+        }
+        return true;
+    };
+
+    if (!loop.enabled)
+    {
+        run_once();
+        return;
+    }
+
+    if (loop.times == static_cast<unsigned long long>(-1))
+    {
+        // infinite loop: repeat the whole script until stopped
+        while (!st.stop_requested())
+        {
+            if (!run_once())
+                return;
+            if (!wait_for_or_stop(st, loop.delay))
+                return;
+        }
+        return;
+    }
+
+    for (unsigned long long i = 0; i < loop.times; ++i)
+    {
+        if (st.stop_requested())
+            return;
+        if (!run_once())
+            return;
+        if (!wait_for_or_stop(st, loop.delay))
+            return;
+    }
 }

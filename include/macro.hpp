@@ -18,6 +18,8 @@
 #include <cstddef>
 #include <vector>
 
+struct loopment; // forward declaration only; macro.cpp sees the full definition
+
 // generated from COMMAND_LIST, one enumerator per adapter command
 enum class command_type
 {
@@ -44,3 +46,22 @@ struct lua_State;
 /// @note L must be the Lua state that already has the script loaded and
 ///       whose stack contains the `run` function to call.
 macro_script parse_lua_result(lua_State *L);
+
+#include <stop_token>
+
+/// Dispatch a single command to the platform adapter, casting the stored
+/// doubles to the types each adapter function expects. Missing trailing
+/// arguments fall back to 0.
+void dispatch_command(const command &cmd);
+
+/// Wait for `ms` milliseconds, aborting early when `st` receives a stop
+/// request. Returns true if the full delay elapsed, false if stopped.
+bool wait_for_or_stop(std::stop_token st, double ms);
+
+/// Execute a macro_script on the calling thread. Each instruction first
+/// waits its `delay` (interruptible), then dispatches. If `loop.enabled`,
+/// the whole script repeats `loop.times` times (or forever when
+/// `loop.times == -1`), pausing `loop.delay` ms between rounds.
+/// Returns early as soon as a stop is requested.
+void run_macro_script(std::stop_token st, const macro_script &script,
+                      const struct loopment &loop);
