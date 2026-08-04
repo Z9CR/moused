@@ -278,8 +278,13 @@ namespace keyboard
     // map VK_* to keys for GLFW‑style codes (≥256)
     static keys vk2keys(int vk)
     {
-        // alphanumeric & punctuation — same as ASCII / VK
-        if (vk >= 32 && vk <= 122)
+        // alphanumeric & punctuation — same as ASCII / VK.
+        // Exclude VK_NUMPAD0..VK_NUMPAD9 (96-105) and VK_F1..VK_F10 (112-121):
+        // these occupy ASCII slots but must map to the GLFW-style codes
+        // (F1=290, KP_0=320, ...) handled by the branches below.
+        if (vk >= 32 && vk <= 122 &&
+            !(vk >= 96 && vk <= 105) &&
+            !(vk >= 112 && vk <= 121))
             return static_cast<keys>(vk);
 
         switch (vk)
