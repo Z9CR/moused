@@ -244,9 +244,9 @@ bool moused::OnInit()
     try
     {
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
-        // Elevate to root (via pkexec if needed)
-        polkit_root_getter(argc, argv);
-
+        // Elevation happens in main() BEFORE wxEntry/GTK init: the pkexec
+        // re-exec'd root process needs the display env restored from the
+        // envfile, and gtk_init_check() runs before OnInit().
         // Open /dev/uinput while we are still root — the fd stays valid
         // even after we drop privileges.
         if (!platform_uinput_setup())
@@ -330,5 +330,27 @@ int moused::OnExit()
     return wxApp::OnExit();
 }
 
+// On Unix, elevate (via pkexec) BEFORE wxEntry: gtk_init_check() runs before
+// wxApp::OnInit(), so the env restore done in the root branch must happen
+// before GTK initializes, otherwise the pkexec-spawned root process dies with
+// "Unable to initialize GTK+" (empty DISPLAY/WAYLAND environment).
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+wxIMPLEMENT_APP_NO_MAIN(moused);
+
+int main(int argc, char *argv[])
+{
+    try
+    {
+        polkit_root_getter(argc, argv);
+    }
+    catch (const std::exception &e)
+    {
+        log_msg("moused: %s\n", e.what());
+        return -1;
+    }
+    return wxEntry(argc, argv);
+}
+#else
 // Macro that generates the standard main() entry point execution block
 wxIMPLEMENT_APP(moused);
+#endif

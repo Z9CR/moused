@@ -69,6 +69,12 @@ void polkit_root_getter(int argc, char* argv[])
         // Restrict permissions so only this user (and root) can read it
         chmod(envfile.c_str(), 0600);
 
+        // execlp() replaces the process image without running C++ destructors,
+        // so the ofstream buffer must be flushed explicitly here — otherwise
+        // the env file stays empty and the re-executed root process can't
+        // restore the display environment.
+        f.flush();
+
         execlp("pkexec", "pkexec", me.c_str(), "--restore-env", (char *)NULL);
 
         // pkexec failed (not installed / user cancelled / no desktop session)
