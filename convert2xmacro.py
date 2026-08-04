@@ -21,7 +21,7 @@ for arg in lns:
         if len(kv) != 2:
             print(f'skip: no "=" found in {ln!r}', file=sys.stderr)
             continue
-        ret += f'X({kv[0]}, {kv[1]})\n'
+        ret += f'ITEM({kv[0]}, {kv[1]})\n'
     
 
 print(ret, end='')

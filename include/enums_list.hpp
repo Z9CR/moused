@@ -4,136 +4,136 @@
 // because if we builtin them, it's hard to pass the param to lua side
 
 #pragma region MOUSE_BTN_LIST
-#define MOUSE_BTN_LIST(X)            \
-    X(LMB, 0) /* MB1 in windows.h */ \
-    X(RMB, 1) /* MB2 in windows.h */ \
-    X(MMB, 2) /* MB3 in windows.h */ \
-    X(XB1, 3) /* MB4 in windows.h */ \
-    X(XB2, 4) /* MB5 in windows.h */
+#define MOUSE_BTN_LIST(ITEM)            \
+    ITEM(LMB, 0) /* MB1 in windows.h */ \
+    ITEM(RMB, 1) /* MB2 in windows.h */ \
+    ITEM(MMB, 2) /* MB3 in windows.h */ \
+    ITEM(XB1, 3) /* MB4 in windows.h */ \
+    ITEM(XB2, 4) /* MB5 in windows.h */
 #pragma endregion
 
 #pragma region WHEEL_ROTATION_LIST
-#define WHEEL_ROTATION_LIST(X) \
-    X(WU, 0) /* WheelUp   */   \
-    X(WD, 1) /* WheelDown */
+#define WHEEL_ROTATION_LIST(ITEM) \
+    ITEM(WU, 0) /* WheelUp   */   \
+    ITEM(WD, 1) /* WheelDown */
 #pragma endregion
 
 #pragma region COMMAND_LIST
-#define COMMAND_LIST(X) \
-    X(translate, 0)     \
-    X(move_to, 1)       \
-    X(click, 2)         \
-    X(press, 3)         \
-    X(release, 4)       \
-    X(wheel, 5)
+#define COMMAND_LIST(ITEM) \
+    ITEM(translate, 0)     \
+    ITEM(move_to, 1)       \
+    ITEM(click, 2)         \
+    ITEM(press, 3)         \
+    ITEM(release, 4)       \
+    ITEM(wheel, 5)
 #pragma endregion
 
 #pragma region KEYS_LIST
-#define KEYS_LIST(X)      \
-    X(NONE, 0)            \
-    X(APOSTROPHE, 39)     \
-    X(COMMA, 44)          \
-    X(MINUS, 45)          \
-    X(PERIOD, 46)         \
-    X(SLASH, 47)          \
-    X(ZERO, 48)           \
-    X(ONE, 49)            \
-    X(TWO, 50)            \
-    X(THREE, 51)          \
-    X(FOUR, 52)           \
-    X(FIVE, 53)           \
-    X(SIX, 54)            \
-    X(SEVEN, 55)          \
-    X(EIGHT, 56)          \
-    X(NINE, 57)           \
-    X(SEMICOLON, 59)      \
-    X(EQUAL, 61)          \
-    X(A, 65)              \
-    X(B, 66)              \
-    X(C, 67)              \
-    X(D, 68)              \
-    X(E, 69)              \
-    X(F, 70)              \
-    X(G, 71)              \
-    X(H, 72)              \
-    X(I, 73)              \
-    X(J, 74)              \
-    X(K, 75)              \
-    X(L, 76)              \
-    X(M, 77)              \
-    X(N, 78)              \
-    X(O, 79)              \
-    X(P, 80)              \
-    X(Q, 81)              \
-    X(R, 82)              \
-    X(S, 83)              \
-    X(T, 84)              \
-    X(U, 85)              \
-    X(V, 86)              \
-    X(W, 87)              \
-    X(X, 88)              \
-    X(Y, 89)              \
-    X(Z, 90)              \
-    X(LEFT_BRACKET, 91)   \
-    X(BACKSLASH, 92)      \
-    X(RIGHT_BRACKET, 93)  \
-    X(GRAVE, 96)          \
-    X(SPACE, 32)          \
-    X(ESCAPE, 256)        \
-    X(ENTER, 257)         \
-    X(TAB, 258)           \
-    X(BACKSPACE, 259)     \
-    X(INSERT, 260)        \
-    X(DELETE, 261)        \
-    X(RIGHT, 262)         \
-    X(LEFT, 263)          \
-    X(DOWN, 264)          \
-    X(UP, 265)            \
-    X(PAGE_UP, 266)       \
-    X(PAGE_DOWN, 267)     \
-    X(HOME, 268)          \
-    X(END, 269)           \
-    X(CAPS_LOCK, 280)     \
-    X(SCROLL_LOCK, 281)   \
-    X(NUM_LOCK, 282)      \
-    X(PRINT_SCREEN, 283)  \
-    X(PAUSE, 284)         \
-    X(F1, 290)            \
-    X(F2, 291)            \
-    X(F3, 292)            \
-    X(F4, 293)            \
-    X(F5, 294)            \
-    X(F6, 295)            \
-    X(F7, 296)            \
-    X(F8, 297)            \
-    X(F9, 298)            \
-    X(F10, 299)           \
-    X(F11, 300)           \
-    X(F12, 301)           \
-    X(LEFT_SHIFT, 340)    \
-    X(LEFT_CONTROL, 341)  \
-    X(LEFT_ALT, 342)      \
-    X(LEFT_SUPER, 343)    \
-    X(RIGHT_SHIFT, 344)   \
-    X(RIGHT_CONTROL, 345) \
-    X(RIGHT_ALT, 346)     \
-    X(RIGHT_SUPER, 347)   \
-    X(KB_MENU, 348)       \
-    X(KP_0, 320)          \
-    X(KP_1, 321)          \
-    X(KP_2, 322)          \
-    X(KP_3, 323)          \
-    X(KP_4, 324)          \
-    X(KP_5, 325)          \
-    X(KP_6, 326)          \
-    X(KP_7, 327)          \
-    X(KP_8, 328)          \
-    X(KP_9, 329)          \
-    X(KP_DECIMAL, 330)    \
-    X(KP_DIVIDE, 331)     \
-    X(KP_MULTIPLY, 332)   \
-    X(KP_SUBTRACT, 333)   \
-    X(KP_ADD, 334)        \
-    X(KP_ENTER, 335)      \
-    X(KP_EQUAL, 336)
+#define KEYS_LIST(ITEM)      \
+    ITEM(NONE, 0)            \
+    ITEM(APOSTROPHE, 39)     \
+    ITEM(COMMA, 44)          \
+    ITEM(MINUS, 45)          \
+    ITEM(PERIOD, 46)         \
+    ITEM(SLASH, 47)          \
+    ITEM(ZERO, 48)           \
+    ITEM(ONE, 49)            \
+    ITEM(TWO, 50)            \
+    ITEM(THREE, 51)          \
+    ITEM(FOUR, 52)           \
+    ITEM(FIVE, 53)           \
+    ITEM(SIX, 54)            \
+    ITEM(SEVEN, 55)          \
+    ITEM(EIGHT, 56)          \
+    ITEM(NINE, 57)           \
+    ITEM(SEMICOLON, 59)      \
+    ITEM(EQUAL, 61)          \
+    ITEM(A, 65)              \
+    ITEM(B, 66)              \
+    ITEM(C, 67)              \
+    ITEM(D, 68)              \
+    ITEM(E, 69)              \
+    ITEM(F, 70)              \
+    ITEM(G, 71)              \
+    ITEM(H, 72)              \
+    ITEM(I, 73)              \
+    ITEM(J, 74)              \
+    ITEM(K, 75)              \
+    ITEM(L, 76)              \
+    ITEM(M, 77)              \
+    ITEM(N, 78)              \
+    ITEM(O, 79)              \
+    ITEM(P, 80)              \
+    ITEM(Q, 81)              \
+    ITEM(R, 82)              \
+    ITEM(S, 83)              \
+    ITEM(T, 84)              \
+    ITEM(U, 85)              \
+    ITEM(V, 86)              \
+    ITEM(W, 87)              \
+    ITEM(X, 88)              \
+    ITEM(Y, 89)              \
+    ITEM(Z, 90)              \
+    ITEM(LEFT_BRACKET, 91)   \
+    ITEM(BACKSLASH, 92)      \
+    ITEM(RIGHT_BRACKET, 93)  \
+    ITEM(GRAVE, 96)          \
+    ITEM(SPACE, 32)          \
+    ITEM(ESCAPE, 256)        \
+    ITEM(ENTER, 257)         \
+    ITEM(TAB, 258)           \
+    ITEM(BACKSPACE, 259)     \
+    ITEM(INSERT, 260)        \
+    ITEM(DELETE, 261)        \
+    ITEM(RIGHT, 262)         \
+    ITEM(LEFT, 263)          \
+    ITEM(DOWN, 264)          \
+    ITEM(UP, 265)            \
+    ITEM(PAGE_UP, 266)       \
+    ITEM(PAGE_DOWN, 267)     \
+    ITEM(HOME, 268)          \
+    ITEM(END, 269)           \
+    ITEM(CAPS_LOCK, 280)     \
+    ITEM(SCROLL_LOCK, 281)   \
+    ITEM(NUM_LOCK, 282)      \
+    ITEM(PRINT_SCREEN, 283)  \
+    ITEM(PAUSE, 284)         \
+    ITEM(F1, 290)            \
+    ITEM(F2, 291)            \
+    ITEM(F3, 292)            \
+    ITEM(F4, 293)            \
+    ITEM(F5, 294)            \
+    ITEM(F6, 295)            \
+    ITEM(F7, 296)            \
+    ITEM(F8, 297)            \
+    ITEM(F9, 298)            \
+    ITEM(F10, 299)           \
+    ITEM(F11, 300)           \
+    ITEM(F12, 301)           \
+    ITEM(LEFT_SHIFT, 340)    \
+    ITEM(LEFT_CONTROL, 341)  \
+    ITEM(LEFT_ALT, 342)      \
+    ITEM(LEFT_SUPER, 343)    \
+    ITEM(RIGHT_SHIFT, 344)   \
+    ITEM(RIGHT_CONTROL, 345) \
+    ITEM(RIGHT_ALT, 346)     \
+    ITEM(RIGHT_SUPER, 347)   \
+    ITEM(KB_MENU, 348)       \
+    ITEM(KP_0, 320)          \
+    ITEM(KP_1, 321)          \
+    ITEM(KP_2, 322)          \
+    ITEM(KP_3, 323)          \
+    ITEM(KP_4, 324)          \
+    ITEM(KP_5, 325)          \
+    ITEM(KP_6, 326)          \
+    ITEM(KP_7, 327)          \
+    ITEM(KP_8, 328)          \
+    ITEM(KP_9, 329)          \
+    ITEM(KP_DECIMAL, 330)    \
+    ITEM(KP_DIVIDE, 331)     \
+    ITEM(KP_MULTIPLY, 332)   \
+    ITEM(KP_SUBTRACT, 333)   \
+    ITEM(KP_ADD, 334)        \
+    ITEM(KP_ENTER, 335)      \
+    ITEM(KP_EQUAL, 336)
 #pragma endregion
