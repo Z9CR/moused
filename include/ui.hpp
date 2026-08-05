@@ -5,7 +5,8 @@
 class mainWindow : public wxFrame
 {
 public:
-    mainWindow(const wxString &title, int winw, int winh);
+    // window auto-sizes to fit its content (the macro viewer grid)
+    mainWindow(const wxString &title);
 private:
     void onQuit(wxCommandEvent &ev);
     void openConfigDir(wxCommandEvent &ev);

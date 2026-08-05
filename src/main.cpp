@@ -308,7 +308,7 @@ bool moused::OnInit()
     #pragma endregion
     */
     // run ui
-    mainWindow *mw = new mainWindow("moused", mainwindow_width, mainwindow_height);
+    mainWindow *mw = new mainWindow("moused");
     mw->Show(true);
 
     return true;

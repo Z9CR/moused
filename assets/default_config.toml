@@ -1,4 +1,4 @@
-# this is the default properties ver 8/3/2026
+# this is the default properties ver 8/5/2026
 
 #
 # a template hotkey-properties should like that
@@ -44,13 +44,14 @@
 #
 
 [global]
-window_width = 300
-window_height = 500
 # when smooth moving,
 # prog will slice the path to dest into pieces,
 # and the value below is how long will stay in per pieces
 # unit: ms
 smooth_frametime_ms = 4
+# window size upper bound; 0 = no limit
+max_window_width = 800
+max_window_height = 600
 
 [L]
 enabled = false

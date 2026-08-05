@@ -31,13 +31,13 @@ struct key_property
     loopment loop;
 };
 
-// unit: px
-extern int mainwindow_height;
-
-// unit: px
-extern int mainwindow_width;
-
 extern const std::string mainwindow_title;
+
+// window size upper bound, parsed from [global].max_window_width/height
+extern int mainwindow_max_width;
+
+// unit: px
+extern int mainwindow_max_height;
 
 // windows: `%APPDATA%/moused/`'s specific path
 // linux&bsds: `~/.config/moused/`'s specific~

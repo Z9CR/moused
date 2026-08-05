@@ -3,9 +3,57 @@
 #include <utils.hpp>
 #include <wx/wx.h>
 #include <wx/menu.h>
+#include <wx/grid.h>
+#include <wx/renderer.h>
 
-mainWindow::mainWindow(const wxString &title, int winw, int winh)
-    : wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition, wxSize(winw, winh))
+#define KEY_ITEM(v, k) {#v, k},
+const static struct
+{
+    std::string name;
+    int key;
+} table[]{
+    KEYS_LIST(KEY_ITEM)};
+#undef KEY_ITEM
+
+std::string getKeyNameOf(keyboard::keys key)
+{
+    for (const auto &k : table)
+        if (static_cast<keyboard::keys>(k.key) == key)
+            return k.name;
+    return std::string("NONE");
+}
+
+class gridBtnRender : public wxGridCellRenderer
+{
+public:
+    virtual void Draw(wxGrid &grid, wxGridCellAttr &attr, wxDC &dc,
+                      const wxRect &rect, int row, int col, bool isSelected) override
+    {
+        wxRendererNative::Get().DrawPushButton(&grid, dc, rect, 0);
+        wxString label = grid.GetCellValue(row, col);
+        dc.DrawLabel(label, rect, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL);
+    }
+
+    virtual wxGridCellRenderer *Clone() const override
+    {
+        return new gridBtnRender;
+    }
+
+    virtual wxSize GetBestSize(wxGrid& grid,
+                               wxGridCellAttr& attr,
+                               wxDC& dc,
+                               int row,
+                               int col) override
+    {
+        wxString label = grid.GetCellValue(row, col);
+        wxSize textSize = dc.GetTextExtent(label);
+        return wxSize(textSize.x + 20, textSize.y + 10);
+    }
+};
+
+
+mainWindow::mainWindow(const wxString &title)
+    : wxFrame(nullptr, wxID_ANY, title)
 {
     // WxWidget uses camelNaming, so do I
     // auto dark&light style
@@ -14,28 +62,102 @@ mainWindow::mainWindow(const wxString &title, int winw, int winh)
     wxToolBar *toolBar = CreateToolBar(wxTB_TEXT | wxTB_NOICONS);
 #pragma region openCfg
     constexpr int toolBarItemOpenCfgID = 0x6767;
-    toolBar->AddTool(toolBarItemOpenCfgID, _("open config"), wxNullBitmap);
+    toolBar->AddTool(toolBarItemOpenCfgID, _("open_config"), wxNullBitmap);
     Bind(wxEVT_MENU, &mainWindow::openConfigDir, this, toolBarItemOpenCfgID);
 #pragma endregion
 #pragma region quit
     // MSW sign-extends toolbar WM_COMMAND ids to signed short, so ids must be
     // < 0x8000 (classic hex words like 0xcafe don't fit; 0x5eed does)
-    constexpr int toolBarItemQuitId = 0x5eed;
-    toolBar->AddTool(toolBarItemQuitId, _("quit"), wxNullBitmap); 
+    constexpr int toolBarItemQuitId = 011 + 45 + 14;
+    toolBar->AddTool(toolBarItemQuitId, _("quit"), wxNullBitmap);
     Bind(wxEVT_MENU, &mainWindow::onQuit, this, toolBarItemQuitId);
 #pragma endregion
     toolBar->Realize();
 #pragma endregion
 
-
+#pragma region macroViewer
+    constexpr int macroViewerId = 0xCa + 0xFe + 0xBa + 0xBe;
+    wxGrid *macroViewer = new wxGrid(
+        this,
+        macroViewerId,
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxWANTS_CHARS,
+        "macroViewer");
+    macroViewer->CreateGrid(keys_properties.size(), 4);
+    // hide the row-label column (the 1,2,3... on the left)
+    macroViewer->SetRowLabelSize(0);
+    // all cells become read-only / non-editable
+    macroViewer->EnableEditing(false);
+    wxGridCellAttr* attr = new wxGridCellAttr();
+    attr->SetRenderer(new gridBtnRender());
+    macroViewer->SetColAttr(3, attr);
+    // columns' names
+    macroViewer->SetColLabelValue(0, _("macroViewer.enabled"));
+    macroViewer->SetColLabelValue(1, _("macroViewer.key"));
+    macroViewer->SetColLabelValue(2, _("macroViewer.code"));
+    macroViewer->SetColLabelValue(3, _("macroViewer.edit"));
+    /*
+     * keys_properties {
+     *     keyboard::keys key;
+     *     bool enabled;
+     *     script_type type;
+     *     std::string code;
+     *     loopment loop {
+     *         bool enabled;
+     *         unsigned long long times;
+     *         double delay;
+     *     }
+     * }
+     */
+    for (int i = 0; i < keys_properties.size(); i++)
+    {
+        const auto &current = keys_properties[i];
+        macroViewer->SetCellValue(i, 0, current.enabled ? "Y" : "N");
+        macroViewer->SetCellValue(i, 1, getKeyNameOf(current.key));
+        macroViewer->SetCellValue(i, 2, current.code);
+        macroViewer->SetCellValue(i, 3, "*test there should be a btn");
+    }
+    macroViewer->Bind(
+        wxEVT_GRID_CELL_LEFT_CLICK,
+        [=](wxGridEvent &evt)
+        {
+            if (evt.GetCol() == 3)
+            {
+                wxString label = macroViewer->GetCellValue(evt.GetRow(), evt.GetCol());
+                wxMessageBox(wxString::Format("*test there should be a window", label));
+            }
+            evt.Skip();
+        });
+#pragma region macroViewerLayout
+    // auto-size every column & row so each cell fully shows its content
+    // (multi-line Lua code makes its row grow taller as needed)
+    macroViewer->AutoSize();
+    // lay out the grid with a sizer so the frame can size itself to fit
+    wxSizer *sizer = new wxBoxSizer(wxVERTICAL);
+    sizer->Add(macroViewer, 1, wxEXPAND | wxALL, 4);
+    this->SetSizer(sizer);
+    // clamp the auto-sized window to its configured maximum size first, so
+    // Fit() below cannot grow the window beyond it (grid scrolls if the
+    // content is larger). 0 = no upper bound.
+    wxSize maxSize(mainwindow_max_width, mainwindow_max_height);
+    if (mainwindow_max_width > 0 && mainwindow_max_height > 0)
+        this->SetMaxSize(maxSize);
+    // resize the frame so every grid cell is fully visible
+    this->Fit();
+#pragma endregion
+#pragma endregion
 }
 
-void mainWindow::onQuit(wxCommandEvent &) {
+void mainWindow::onQuit(wxCommandEvent &)
+{
     this->Close();
 }
 
-void mainWindow::openConfigDir(wxCommandEvent &) {
-    if(!wxDirExists(platform_cfg_dir.c_str())) {
+void mainWindow::openConfigDir(wxCommandEvent &)
+{
+    if (!wxDirExists(platform_cfg_dir.c_str()))
+    {
         log_msg("moused: file `%s` not found\n", platform_cfg_dir.c_str());
     }
     else

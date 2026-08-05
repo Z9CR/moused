@@ -10,13 +10,13 @@
 #include <format>
 
 // fallbacks
-int mainwindow_width = 300;
-
-int mainwindow_height = 500;
-
 int smoothmv_frametime = 4;
 
 const std::string mainwindow_title = "moused";
+
+// window size upper bound, falls back to 0 = "no max size"
+int mainwindow_max_width = 0;
+int mainwindow_max_height = 0;
 
 // global config directory path, static lifetime
 std::string platform_cfg_dir;
@@ -148,8 +148,6 @@ void refresh_config()
     toml::value _props = toml::parse(cfg.string());
     // reset to defaults before re-parsing, so repeated calls don't accumulate
     // fallbacks
-    mainwindow_width = 300;
-    mainwindow_height = 500;
     smoothmv_frametime = 4;
     keys_properties.clear();
     if (_props.is_empty())
@@ -172,9 +170,11 @@ void refresh_config()
         if (key == "global")
         {
             const auto &global = val.as_table();
-            mainwindow_width = static_cast<int>(global.at("window_width").as_integer());
-            mainwindow_height = static_cast<int>(global.at("window_height").as_integer());
             smoothmv_frametime = static_cast<int>(global.at("smooth_frametime_ms").as_integer());
+            // `val` is the [global] basic_value; find_or needs a basic_value
+            // (or pointer), not a bare table, hence we search within val.
+            mainwindow_max_width = static_cast<int>(toml::find_or(val, "max_window_width", 0));
+            mainwindow_max_height = static_cast<int>(toml::find_or(val, "max_window_height", 0));
             continue;
         }
         // every profile of a key should be a table
