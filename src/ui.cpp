@@ -1,6 +1,7 @@
 #include <ui.hpp>
 #include <config.hpp>
 #include <utils.hpp>
+#include <algorithm>
 #include <wx/wx.h>
 #include <wx/menu.h>
 #include <wx/grid.h>
@@ -21,6 +22,21 @@ std::string getKeyNameOf(keyboard::keys key)
         if (static_cast<keyboard::keys>(k.key) == key)
             return k.name;
     return std::string("NONE");
+}
+
+// display a combo as "LEFT_CONTROL + L", sorted by enum value for stability
+std::string comboNameOf(const key_property &prop)
+{
+    auto ks = prop.keys;
+    std::sort(ks.begin(), ks.end());
+    std::string name;
+    for (std::size_t i = 0; i < ks.size(); ++i)
+    {
+        if (i > 0)
+            name += " + ";
+        name += getKeyNameOf(ks[i]);
+    }
+    return name.empty() ? std::string("NONE") : name;
 }
 
 class gridBtnRender : public wxGridCellRenderer
@@ -51,6 +67,9 @@ public:
     }
 };
 
+class editorFrame : public wxFrame {
+
+};
 
 mainWindow::mainWindow(const wxString &title)
     : wxFrame(nullptr, wxID_ANY, title)
@@ -114,7 +133,7 @@ mainWindow::mainWindow(const wxString &title)
     {
         const auto &current = keys_properties[i];
         macroViewer->SetCellValue(i, 0, current.enabled ? "Y" : "N");
-        macroViewer->SetCellValue(i, 1, getKeyNameOf(current.key));
+        macroViewer->SetCellValue(i, 1, comboNameOf(current));
         macroViewer->SetCellValue(i, 2, current.code);
         macroViewer->SetCellValue(i, 3, "*test there should be a btn");
     }

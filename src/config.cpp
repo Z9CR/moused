@@ -152,7 +152,7 @@ void refresh_config()
     keys_properties.clear();
     if (_props.is_empty())
         return;
-    const auto& props = _props.as_table();
+    const auto &props = _props.as_table();
     // gen keyboard::keys->string map
     const struct
     {
@@ -187,21 +187,33 @@ void refresh_config()
         // 2 structures to save profile temporally
         loopment _loopment{};
         key_property _property{};
-        // map the toml table-name (e.g. "L", "F1") to the keyboard key
-        bool matched = false;
-        for (const auto &item : table)
+        // `keys` is MANDATORY: the combo is declared strictly in this array
+        // (["LEFT_CONTROL", "L"]), never via the section name. Names come from
+        // KEYS_LIST; unknown names are rejected here.
+        auto name_to_key = [&](const std::string &n) -> keyboard::keys
         {
-            if (item.v == key)
-            {
-                _property.key = static_cast<keyboard::keys>(item.k);
-                matched = true;
-                break;
-            }
-        }
-        if (!matched)
+            for (const auto &item : table)
+                if (item.v == n)
+                    return static_cast<keyboard::keys>(item.k);
+            return keyboard::keys::NONE;
+        };
+
+        auto keys_it = key_profile.find("keys");
+        if (keys_it == key_profile.end() || !keys_it->second.is_array())
         {
-            throw std::runtime_error(std::format("moused: unknown key `{}` in config file `{}`", key, cfg.string()));
+            throw std::runtime_error(std::format("moused: section `{}` is missing the required `keys = [...]` array in config file `{}`", key, cfg.string()));
         }
+        const auto &arr = keys_it->second.as_array();
+        for (const auto &v : arr)
+        {
+            const std::string n = v.as_string();
+            keyboard::keys k = name_to_key(n);
+            if (k == keyboard::keys::NONE)
+                throw std::runtime_error(std::format("moused: unknown key `{}` in config file `{}`", n, cfg.string()));
+            _property.keys.push_back(k);
+        }
+        if (_property.keys.empty())
+            throw std::runtime_error(std::format("moused: empty keys array in config file `{}`", cfg.string()));
         /*
         [key]
         enabled = <bool>

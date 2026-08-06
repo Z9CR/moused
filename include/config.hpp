@@ -24,7 +24,10 @@ struct loopment
 
 struct key_property
 {
-    keyboard::keys key;
+    // combo key: at least one key; length > 1 means a modifier combination.
+    // Parsed from the `keys = [...]` array; when absent, falls back to the
+    // section name mapped via KEYS_LIST (single key, old format).
+    std::vector<keyboard::keys> keys;
     bool enabled;
     script_type type;
     std::string code;

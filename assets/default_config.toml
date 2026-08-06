@@ -1,8 +1,12 @@
-# this is the default properties ver 8/5/2026
+# this is the default properties ver 8/6/2026
 
 #
 # a template hotkey-properties should like that
 # [key]
+# keys = ["L"]                    # combo keys (array; >=1). Names come from
+#                                 # KEYS_LIST, e.g. "L", "F1", "LEFT_CONTROL",
+#                                 # "LEFT_SHIFT", "LEFT_ALT". When omitted,
+#                                 # the section name is used as a single key
 # enabled = <bool>
 # type = 'inline' or 'file'
 # val = """lua code(if type='inline')""" or 'file path(if type='file')'
@@ -12,6 +16,20 @@
 # # times = -1: infinity loop
 # delay = <double>
 # # delay unit: ms
+#
+# example combo (table name is just an identifier, must be unique):
+# [CTRL_L]
+# enabled = true
+# keys = ["LEFT_CONTROL", "L"]
+# type = 'inline'
+# val = """..."""
+# [CTRL_L.loop]
+# enabled = false
+# times = 0
+# delay = 0.0
+#
+# while a longer combo is held, its shorter overlapping sub-key combos are
+# suppressed (e.g. holding Ctrl+L keeps plain L from firing).
 #
 
 #
