@@ -1,21 +1,19 @@
-#include <utils.hpp>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <utils.hpp>
 
-void mkdirs(const std::string &path)
-{
+void mkdirs(const std::string& path) {
     std::error_code ec{};
     if (!std::filesystem::create_directories(path, ec) && ec)
-        throw std::filesystem::filesystem_error("failed to create directories", std::filesystem::path(path), ec);
+        throw std::filesystem::filesystem_error(
+            "failed to create directories", std::filesystem::path(path), ec);
 }
 
-void log_msg(const char* fmt, ...)
-{
-    static const std::string log_path = []
-    {
+void log_msg(const char* fmt, ...) {
+    static const std::string log_path = [] {
 #ifdef _WIN32
         const char* tmp = std::getenv("TEMP");
         if (!tmp) tmp = std::getenv("TMP");

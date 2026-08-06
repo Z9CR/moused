@@ -1,5 +1,6 @@
 // use ifndef&define to pragma once
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || \
+    defined(__OpenBSD__) || defined(__DragonFly__)
 #ifndef POLKIT_UTILS
 #define POLKIT_UTILS
 
@@ -9,7 +10,8 @@
 // only used in inner .cpp
 // static const char *get_exe_path(const char *argv0);
 
-// the program must have privilege in Linux and BSDs to RW /dev/uinput(Linux) or /dev/wsmouse(BSDs)
+// the program must have privilege in Linux and BSDs to RW /dev/uinput(Linux) or
+// /dev/wsmouse(BSDs)
 void polkit_root_getter(int argc, char* argv[]);
 
 /// Drop root privileges back to the original user.

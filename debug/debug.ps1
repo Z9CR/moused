@@ -1,8 +1,9 @@
+$root = Resolve-Path "$PSScriptRoot\.."
 try {
-    cmake -B .\build
-    cmake --build .\build
+    cmake -B "$root\build"
+    cmake --build "$root\build"
     Write-Host 'compile work done'
-    .\build\Debug\moused.exe 2>&1 
+    & "$root\build\Debug\moused.exe" 2>&1
     # 'cause wxWidget's start func isnt `main` but `WinMain` instead, 
     # we neet to use `>` to see stderr
 }

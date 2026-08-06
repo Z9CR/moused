@@ -7,14 +7,9 @@
 #include <vector>
 
 // the type of a hotkey's bound script
-enum class script_type
-{
-    in_line = 0,
-    file = 1
-};
+enum class script_type { in_line = 0, file = 1 };
 
-struct loopment
-{
+struct loopment {
     bool enabled;
     // when `-1`, it will be casted into `18446744073709551615`
     unsigned long long times;
@@ -22,8 +17,7 @@ struct loopment
     double delay;
 };
 
-struct key_property
-{
+struct key_property {
     // combo key: at least one key; length > 1 means a modifier combination.
     // Parsed from the `keys = [...]` array; when absent, falls back to the
     // section name mapped via KEYS_LIST (single key, old format).
@@ -60,13 +54,12 @@ extern std::vector<key_property> keys_properties;
 
 // utils
 // get `std::string platform_cfg_dir`
-// Fetch the Roaming `%%APPDATA%%\`(win), `~/moused/`(linux||bsds), `~/Library/moused/`(macos),
-// then write into platform_cfg_dir
-// attention: the `\` or `/` is included in the tail
-// run it when init
-// throws std::runtime_error on failure
+// Fetch the Roaming `%%APPDATA%%\`(win), `~/moused/`(linux||bsds),
+// `~/Library/moused/`(macos), then write into platform_cfg_dir attention: the
+// `\` or `/` is included in the tail run it when init throws std::runtime_error
+// on failure
 void init_cfg_dir_properties();
 
-void touch_config_file(const std::string &parent_path, const std::string &name);
+void touch_config_file(const std::string& parent_path, const std::string& name);
 
 void refresh_config();

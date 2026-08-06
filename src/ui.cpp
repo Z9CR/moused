@@ -1,84 +1,70 @@
-#include <ui.hpp>
-#include <config.hpp>
-#include <utils.hpp>
-#include <algorithm>
-#include <wx/wx.h>
-#include <wx/menu.h>
 #include <wx/grid.h>
+#include <wx/menu.h>
 #include <wx/renderer.h>
+#include <wx/wx.h>
+
+#include <algorithm>
+#include <config.hpp>
+#include <ui.hpp>
+#include <utils.hpp>
 
 #define KEY_ITEM(v, k) {#v, k},
-const static struct
-{
+const static struct {
     std::string name;
     int key;
-} table[]{
-    KEYS_LIST(KEY_ITEM)};
+} table[]{KEYS_LIST(KEY_ITEM)};
 #undef KEY_ITEM
 
-std::string getKeyNameOf(keyboard::keys key)
-{
-    for (const auto &k : table)
-        if (static_cast<keyboard::keys>(k.key) == key)
-            return k.name;
+std::string getKeyNameOf(keyboard::keys key) {
+    for (const auto& k : table)
+        if (static_cast<keyboard::keys>(k.key) == key) return k.name;
     return std::string("NONE");
 }
 
 // display a combo as "LEFT_CONTROL + L", sorted by enum value for stability
-std::string comboNameOf(const key_property &prop)
-{
+std::string comboNameOf(const key_property& prop) {
     auto ks = prop.keys;
     std::sort(ks.begin(), ks.end());
     std::string name;
-    for (std::size_t i = 0; i < ks.size(); ++i)
-    {
-        if (i > 0)
-            name += " + ";
+    for (std::size_t i = 0; i < ks.size(); ++i) {
+        if (i > 0) name += " + ";
         name += getKeyNameOf(ks[i]);
     }
     return name.empty() ? std::string("NONE") : name;
 }
 
-class gridBtnRender : public wxGridCellRenderer
-{
-public:
-    virtual void Draw(wxGrid &grid, wxGridCellAttr &attr, wxDC &dc,
-                      const wxRect &rect, int row, int col, bool isSelected) override
-    {
+class gridBtnRender : public wxGridCellRenderer {
+   public:
+    virtual void Draw(wxGrid& grid, wxGridCellAttr& attr, wxDC& dc,
+                      const wxRect& rect, int row, int col,
+                      bool isSelected) override {
         wxRendererNative::Get().DrawPushButton(&grid, dc, rect, 0);
         wxString label = grid.GetCellValue(row, col);
-        dc.DrawLabel(label, rect, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL);
+        dc.DrawLabel(label, rect,
+                     wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL);
     }
 
-    virtual wxGridCellRenderer *Clone() const override
-    {
+    virtual wxGridCellRenderer* Clone() const override {
         return new gridBtnRender;
     }
 
-    virtual wxSize GetBestSize(wxGrid& grid,
-                               wxGridCellAttr& attr,
-                               wxDC& dc,
-                               int row,
-                               int col) override
-    {
+    virtual wxSize GetBestSize(wxGrid& grid, wxGridCellAttr& attr, wxDC& dc,
+                               int row, int col) override {
         wxString label = grid.GetCellValue(row, col);
         wxSize textSize = dc.GetTextExtent(label);
         return wxSize(textSize.x + 20, textSize.y + 10);
     }
 };
 
-class editorFrame : public wxFrame {
+class editorFrame : public wxFrame {};
 
-};
-
-mainWindow::mainWindow(const wxString &title)
-    : wxFrame(nullptr, wxID_ANY, title)
-{
+mainWindow::mainWindow(const wxString& title)
+    : wxFrame(nullptr, wxID_ANY, title) {
     // WxWidget uses camelNaming, so do I
     // auto dark&light style
     this->SetBackgroundStyle(wxBackgroundStyle::wxBG_STYLE_SYSTEM);
 #pragma region toolbar
-    wxToolBar *toolBar = CreateToolBar(wxTB_TEXT | wxTB_NOICONS);
+    wxToolBar* toolBar = CreateToolBar(wxTB_TEXT | wxTB_NOICONS);
 #pragma region openCfg
     constexpr int toolBarItemOpenCfgID = 0x6767;
     toolBar->AddTool(toolBarItemOpenCfgID, _("open_config"), wxNullBitmap);
@@ -96,13 +82,9 @@ mainWindow::mainWindow(const wxString &title)
 
 #pragma region macroViewer
     constexpr int macroViewerId = 0xCa + 0xFe + 0xBa + 0xBe;
-    wxGrid *macroViewer = new wxGrid(
-        this,
-        macroViewerId,
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxWANTS_CHARS,
-        "macroViewer");
+    wxGrid* macroViewer =
+        new wxGrid(this, macroViewerId, wxDefaultPosition, wxDefaultSize,
+                   wxWANTS_CHARS, "macroViewer");
     macroViewer->CreateGrid(keys_properties.size(), 4);
     // hide the row-label column (the 1,2,3... on the left)
     macroViewer->SetRowLabelSize(0);
@@ -129,31 +111,28 @@ mainWindow::mainWindow(const wxString &title)
      *     }
      * }
      */
-    for (int i = 0; i < keys_properties.size(); i++)
-    {
-        const auto &current = keys_properties[i];
+    for (int i = 0; i < keys_properties.size(); i++) {
+        const auto& current = keys_properties[i];
         macroViewer->SetCellValue(i, 0, current.enabled ? "Y" : "N");
         macroViewer->SetCellValue(i, 1, comboNameOf(current));
         macroViewer->SetCellValue(i, 2, current.code);
         macroViewer->SetCellValue(i, 3, "*test there should be a btn");
     }
-    macroViewer->Bind(
-        wxEVT_GRID_CELL_LEFT_CLICK,
-        [=](wxGridEvent &evt)
-        {
-            if (evt.GetCol() == 3)
-            {
-                wxString label = macroViewer->GetCellValue(evt.GetRow(), evt.GetCol());
-                wxMessageBox(wxString::Format("*test there should be a window", label));
-            }
-            evt.Skip();
-        });
+    macroViewer->Bind(wxEVT_GRID_CELL_LEFT_CLICK, [=](wxGridEvent& evt) {
+        if (evt.GetCol() == 3) {
+            wxString label =
+                macroViewer->GetCellValue(evt.GetRow(), evt.GetCol());
+            wxMessageBox(
+                wxString::Format("*test there should be a window", label));
+        }
+        evt.Skip();
+    });
 #pragma region macroViewerLayout
     // auto-size every column & row so each cell fully shows its content
     // (multi-line Lua code makes its row grow taller as needed)
     macroViewer->AutoSize();
     // lay out the grid with a sizer so the frame can size itself to fit
-    wxSizer *sizer = new wxBoxSizer(wxVERTICAL);
+    wxSizer* sizer = new wxBoxSizer(wxVERTICAL);
     sizer->Add(macroViewer, 1, wxEXPAND | wxALL, 4);
     this->SetSizer(sizer);
     // clamp the auto-sized window to its configured maximum size first, so
@@ -168,17 +147,11 @@ mainWindow::mainWindow(const wxString &title)
 #pragma endregion
 }
 
-void mainWindow::onQuit(wxCommandEvent &)
-{
-    this->Close();
-}
+void mainWindow::onQuit(wxCommandEvent&) { this->Close(); }
 
-void mainWindow::openConfigDir(wxCommandEvent &)
-{
-    if (!wxDirExists(platform_cfg_dir.c_str()))
-    {
+void mainWindow::openConfigDir(wxCommandEvent&) {
+    if (!wxDirExists(platform_cfg_dir.c_str())) {
         log_msg("moused: file `%s` not found\n", platform_cfg_dir.c_str());
-    }
-    else
+    } else
         wxLaunchDefaultApplication(platform_cfg_dir.c_str());
 }
