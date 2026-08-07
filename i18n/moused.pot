@@ -1,0 +1,46 @@
+# moused message catalog template
+# Run `xgettext --keyword=_ -C -o moused.pot ../src/*.cpp` to regenerate.
+msgid ""
+msgstr ""
+"Project-Id-Version: moused 0.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-07 12:00+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/ui.cpp
+msgid "open_config"
+msgstr ""
+
+#: src/ui.cpp
+msgid "quit"
+msgstr ""
+
+#: src/ui.cpp
+msgid "macroEditor.title"
+msgstr ""
+
+#: src/ui.cpp
+msgid "macroEditor.close"
+msgstr ""
+
+#: src/ui.cpp
+msgid "macroViewer.enabledCol"
+msgstr ""
+
+#: src/ui.cpp
+msgid "macroViewer.keyCol"
+msgstr ""
+
+#: src/ui.cpp
+msgid "macroViewer.editCol"
+msgstr ""
+
+#: src/ui.cpp
+msgid "macroView.editBtn"
+msgstr ""

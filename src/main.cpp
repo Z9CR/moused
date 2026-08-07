@@ -13,6 +13,9 @@
 #include <toml.hpp>
 #include <ui.hpp>
 #include <utils.hpp>
+#include <wx/filefn.h>    // wxPathOnly
+#include <wx/intl.h>      // wxLocale / wxFileTranslationsLoader
+#include <wx/stdpaths.h>  // wxStandardPaths
 extern "C" {
 #include "lauxlib.h"
 #include "lua.h"
@@ -96,6 +99,16 @@ std::jthread g_listener;
 }  // namespace
 
 bool moused::OnInit() {
+    // i18n: load `locale/<lang>/LC_MESSAGES/moused.mo` placed next to the
+    // executable (the build deploys it there; see CMakeLists.txt). `_()` falls
+    // back to the original string when a catalog/translation is missing, so a
+    // missing .mo is never fatal.
+    m_locale.Init(wxLANGUAGE_DEFAULT, wxLOCALE_DONT_LOAD_DEFAULT);
+    wxFileTranslationsLoader::AddCatalogLookupPathPrefix(
+        wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) +
+        wxFILE_SEP_PATH + "locale");
+    m_locale.AddCatalog("moused");
+
     try {
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || \
     defined(__OpenBSD__) || defined(__DragonFly__)

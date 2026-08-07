@@ -1,4 +1,5 @@
 #pragma once
+#include <wx/intl.h>
 #include <wx/wx.h>
 
 // Define the Main Window (Frame)
@@ -17,4 +18,9 @@ class moused : public wxApp {
    public:
     virtual bool OnInit() override;
     virtual int OnExit() override;
+
+   private:
+    // i18n: must live for the whole app lifetime (a local in OnInit() would be
+    // destroyed right after startup and all translations would be lost)
+    wxLocale m_locale;
 };

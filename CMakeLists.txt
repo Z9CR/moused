@@ -86,3 +86,36 @@ target_link_libraries(moused PRIVATE toml11::toml11)
 target_link_libraries(moused PRIVATE lua)
 target_link_libraries(moused PRIVATE LuaBridge)
 target_link_libraries(moused PRIVATE wx::core wx::base)
+
+# i18n: compile every `i18n/<lang>.po` into `locale/<lang>/LC_MESSAGES/moused.mo`
+# and deploy it next to the executable, where wxLocale::AddCatalog("moused")
+# finds it at runtime. Requires GNU gettext's `msgfmt` on PATH; when it's not
+# available the build still succeeds and `_()` simply shows the raw strings.
+set(I18N_DIR ${CMAKE_CURRENT_SOURCE_DIR}/i18n)
+find_program(MSGFMT_EXECUTABLE NAMES msgfmt msgfmt.exe)
+if(MSGFMT_EXECUTABLE)
+    file(GLOB I18N_PO_FILES ${I18N_DIR}/*.po)
+    set(I18N_MO_FILES "")
+    foreach(PO_FILE ${I18N_PO_FILES})
+        get_filename_component(LANG ${PO_FILE} NAME_WE)
+        set(MO_FILE ${CMAKE_CURRENT_BINARY_DIR}/locale/${LANG}/LC_MESSAGES/moused.mo)
+        add_custom_command(
+            OUTPUT ${MO_FILE}
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+                    ${CMAKE_CURRENT_BINARY_DIR}/locale/${LANG}/LC_MESSAGES
+            COMMAND ${MSGFMT_EXECUTABLE} -o ${MO_FILE} ${PO_FILE}
+            DEPENDS ${PO_FILE}
+            COMMENT "msgfmt: ${PO_FILE}"
+        )
+        list(APPEND I18N_MO_FILES ${MO_FILE})
+        # deploy next to the built executable
+        add_custom_command(
+            TARGET moused POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${MO_FILE}
+                    $<TARGET_FILE_DIR:moused>/locale/${LANG}/LC_MESSAGES/moused.mo
+        )
+    endforeach()
+    add_custom_target(i18n_mo ALL DEPENDS ${I18N_MO_FILES})
+else()
+    message(STATUS "msgfmt not found - i18n catalogs will not be built")
+endif()

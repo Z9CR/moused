@@ -2,7 +2,7 @@
 #include <wx/menu.h>
 #include <wx/renderer.h>
 #include <wx/wx.h>
-
+#include <wx/intl.h>
 #include <algorithm>
 #include <config.hpp>
 #include <ui.hpp>
@@ -56,7 +56,21 @@ class gridBtnRender : public wxGridCellRenderer {
     }
 };
 
-class editorFrame : public wxFrame {};
+class editorDialog : public wxDialog {
+   public:
+    editorDialog(wxWindow* parent, key_property& key)
+        : wxDialog(parent, wxID_ANY, _("macroEditor.title")) {
+        auto* sizer = new wxBoxSizer(wxVERTICAL);
+        sizer->Add(new wxStaticText(this, wxID_ANY, comboNameOf(key)), 0,
+                   wxALIGN_CENTER | wxALL, 12);
+        sizer->Add(new wxStaticText(this, wxID_ANY, key.code), 0,
+                   wxALIGN_CENTER | wxALL, 12);
+        sizer->Add(new wxButton(this, wxID_OK, _("macroEditor.close")), 0,
+                   wxALIGN_CENTER | wxALL, 12);
+        SetSizerAndFit(sizer);
+        CentreOnParent();
+    };
+};
 
 mainWindow::mainWindow(const wxString& title)
     : wxFrame(nullptr, wxID_ANY, title) {
@@ -67,14 +81,14 @@ mainWindow::mainWindow(const wxString& title)
     wxToolBar* toolBar = CreateToolBar(wxTB_TEXT | wxTB_NOICONS);
 #pragma region openCfg
     constexpr int toolBarItemOpenCfgID = 0x6767;
-    toolBar->AddTool(toolBarItemOpenCfgID, _("open_config"), wxNullBitmap);
+    toolBar->AddTool(toolBarItemOpenCfgID, _("toolbar.open_config"), wxNullBitmap);
     Bind(wxEVT_MENU, &mainWindow::openConfigDir, this, toolBarItemOpenCfgID);
 #pragma endregion
 #pragma region quit
     // MSW sign-extends toolbar WM_COMMAND ids to signed short, so ids must be
     // < 0x8000 (classic hex words like 0xcafe don't fit; 0x5eed does)
     constexpr int toolBarItemQuitId = 011 + 45 + 14;
-    toolBar->AddTool(toolBarItemQuitId, _("quit"), wxNullBitmap);
+    toolBar->AddTool(toolBarItemQuitId, _("toolbar.quit"), wxNullBitmap);
     Bind(wxEVT_MENU, &mainWindow::onQuit, this, toolBarItemQuitId);
 #pragma endregion
     toolBar->Realize();
@@ -85,45 +99,33 @@ mainWindow::mainWindow(const wxString& title)
     wxGrid* macroViewer =
         new wxGrid(this, macroViewerId, wxDefaultPosition, wxDefaultSize,
                    wxWANTS_CHARS, "macroViewer");
-    macroViewer->CreateGrid(keys_properties.size(), 4);
+    macroViewer->CreateGrid(keys_properties.size(), 3);
     // hide the row-label column (the 1,2,3... on the left)
     macroViewer->SetRowLabelSize(0);
     // all cells become read-only / non-editable
     macroViewer->EnableEditing(false);
     wxGridCellAttr* attr = new wxGridCellAttr();
     attr->SetRenderer(new gridBtnRender());
-    macroViewer->SetColAttr(3, attr);
+    macroViewer->SetColAttr(2, attr);
     // columns' names
-    macroViewer->SetColLabelValue(0, _("macroViewer.enabled"));
-    macroViewer->SetColLabelValue(1, _("macroViewer.key"));
-    macroViewer->SetColLabelValue(2, _("macroViewer.code"));
-    macroViewer->SetColLabelValue(3, _("macroViewer.edit"));
-    /*
-     * keys_properties {
-     *     keyboard::keys key;
-     *     bool enabled;
-     *     script_type type;
-     *     std::string code;
-     *     loopment loop {
-     *         bool enabled;
-     *         unsigned long long times;
-     *         double delay;
-     *     }
-     * }
-     */
+    macroViewer->SetColLabelValue(0, _("macroViewer.enabledCol"));
+    macroViewer->SetColLabelValue(1, _("macroViewer.keyCol"));
+    macroViewer->SetColLabelValue(2, _("macroViewer.editCol"));
     for (int i = 0; i < keys_properties.size(); i++) {
         const auto& current = keys_properties[i];
         macroViewer->SetCellValue(i, 0, current.enabled ? "Y" : "N");
         macroViewer->SetCellValue(i, 1, comboNameOf(current));
-        macroViewer->SetCellValue(i, 2, current.code);
-        macroViewer->SetCellValue(i, 3, "*test there should be a btn");
+        macroViewer->SetCellValue(i, 2, _("macroView.editBtn"));
     }
     macroViewer->Bind(wxEVT_GRID_CELL_LEFT_CLICK, [=](wxGridEvent& evt) {
-        if (evt.GetCol() == 3) {
-            wxString label =
-                macroViewer->GetCellValue(evt.GetRow(), evt.GetCol());
-            wxMessageBox(
-                wxString::Format("*test there should be a window", label));
+        if (evt.GetCol() == 2) {
+            const int row = evt.GetRow();
+            if (row >= 0 && row < static_cast<int>(keys_properties.size())) {
+                // ShowModal() blocks until the dialog is closed and disables
+                // this frame meanwhile, so the grid can't be clicked again
+                editorDialog dlg(this, keys_properties[row]);
+                dlg.ShowModal();
+            }
         }
         evt.Skip();
     });

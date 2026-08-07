@@ -8,6 +8,5 @@ try {
     # we neet to use `>` to see stderr
 }
 finally {
-    #Remove-Item .\build\Debug\*
     Write-Host 'all the works done'
 }
