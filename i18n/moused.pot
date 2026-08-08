@@ -1,10 +1,14 @@
-# moused message catalog template
-# Run `xgettext --keyword=_ -C -o moused.pot ../src/*.cpp` to regenerate.
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the moused package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: moused 0.1\n"
+"Project-Id-Version: moused\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-07 12:00+0800\n"
+"POT-Creation-Date: 2026-08-08 07:11+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -12,44 +16,44 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 
-#: src/ui.cpp
-msgid "open_config"
-msgstr ""
-
-#: src/ui.cpp
-msgid "quit"
-msgstr ""
-
-#: src/ui.cpp
+#: src/ui.cpp:66
 msgid "macroEditor.title"
 msgstr ""
 
-#: src/ui.cpp
-msgid "macroEditor.close"
+#: src/ui.cpp:93
+msgid "macroEditor.open_file"
 msgstr ""
 
-#: src/ui.cpp
+#: src/ui.cpp:116
+msgid "editorDialog.openCfgFileBtn.failedWhenOpeningFile"
+msgstr ""
+
+#: src/ui.cpp:121
+msgid "editorDialog.QuitBtn"
+msgstr ""
+
+#: src/ui.cpp:141
+msgid "toolbar.open_config"
+msgstr ""
+
+#: src/ui.cpp:149
+msgid "toolbar.quit"
+msgstr ""
+
+#: src/ui.cpp:169
 msgid "macroViewer.enabledCol"
 msgstr ""
 
-#: src/ui.cpp
+#: src/ui.cpp:170
 msgid "macroViewer.keyCol"
 msgstr ""
 
-#: src/ui.cpp
+#: src/ui.cpp:171
 msgid "macroViewer.editCol"
 msgstr ""
 
-#: src/ui.cpp
+#: src/ui.cpp:176
 msgid "macroView.editBtn"
-msgstr ""
-
-#: src/ui.cpp
-msgid "editorDialog.open_file"
-msgstr ""
-
-
-#: src/ui.cpp
-msgid "editorDialog.openCfgFileBtn.failedWhenOpeningFile"
 msgstr ""

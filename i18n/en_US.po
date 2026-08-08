@@ -1,56 +1,59 @@
-# Simplified Chinese translation for moused
-# To add a language, copy this file to i18n/<lang>.po, translate the
-# `msgstr` lines and build (CMake will run msgfmt automatically).
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the moused package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: moused 0.1\n"
+"Project-Id-Version: moused\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-07 12:00+0800\n"
-"PO-Revision-Date: 2026-08-07 12:00+0800\n"
-"Last-Translator: \n"
-"Language-Team: Chinese (Simplified)\n"
-"Language: en_US\n"
+"POT-Creation-Date: 2026-08-08 07:11+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: src/ui.cpp
+#: src/ui.cpp:66
+msgid "macroEditor.title"
+msgstr "edit macro"
+
+#: src/ui.cpp:93
+msgid "macroEditor.open_file"
+msgstr "open file"
+
+#: src/ui.cpp:116
+msgid "editorDialog.openCfgFileBtn.failedWhenOpeningFile"
+msgstr "Error occurred when opening file"
+
+#: src/ui.cpp:121
+msgid "editorDialog.QuitBtn"
+msgstr "quit"
+
+#: src/ui.cpp:141
 msgid "toolbar.open_config"
 msgstr "open config"
 
-#: src/ui.cpp
+#: src/ui.cpp:149
 msgid "toolbar.quit"
 msgstr "quit"
 
-#: src/ui.cpp
-msgid "macroEditor.title"
-msgstr "editor"
-
-#: src/ui.cpp
-msgid "macroEditor.close"
-msgstr "close"
-
-#: src/ui.cpp
+#: src/ui.cpp:169
 msgid "macroViewer.enabledCol"
 msgstr "Enabled"
 
-#: src/ui.cpp
+#: src/ui.cpp:170
 msgid "macroViewer.keyCol"
 msgstr "Key"
 
-#: src/ui.cpp
+#: src/ui.cpp:171
 msgid "macroViewer.editCol"
 msgstr "Edit"
 
-#: src/ui.cpp
+#: src/ui.cpp:176
 msgid "macroView.editBtn"
-msgstr "Edit"
-
-#: src/ui.cpp
-msgid "editorDialog.open_file"
-msgstr "open file"
-
-#: src/ui.cpp
-msgid "editorDialog.openCfgFileBtn.failedWhenOpeningFile"
-msgstr "Error occurred when opening config file"
+msgstr "edit"

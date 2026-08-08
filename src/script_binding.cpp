@@ -8,7 +8,6 @@
 #include <enums_list.hpp>
 #include <script_binding.hpp>
 #include <string_view>
-
 extern "C" {
 #include "lauxlib.h"
 #include "lua.h"

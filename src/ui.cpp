@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <config.hpp>
 #include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <ui.hpp>
 #include <utils.hpp>
 
@@ -63,9 +65,32 @@ class editorDialog : public wxDialog {
     editorDialog(wxWindow* parent, key_property& key)
         : wxDialog(parent, wxID_ANY, _("macroEditor.title")) {
         // declare items
+#pragma region codeViewer
+        constexpr int codeViewerId = 0x191 + 9 * 810;
+        wxStaticText* codeViewer;
+        if (key.type == script_type::in_line) {
+            codeViewer = new wxStaticText(this, codeViewerId, key.code);
+        } else {
+            // type = file
+            std::filesystem::path cfg(key.code);
+            if (cfg.is_absolute()) {
+                std::ifstream f(key.code);
+                std::stringstream buffer{};
+                buffer << f.rdbuf();
+                codeViewer = new wxStaticText(this, codeViewerId, buffer.str());
+            } else if (cfg.is_relative()) {
+                cfg = std::filesystem::path(platform_cfg_dir) / cfg;
+                std::ifstream f(cfg.string());
+                std::stringstream buffer{};
+                buffer << f.rdbuf();
+                codeViewer = new wxStaticText(this, codeViewerId, buffer.str());
+            }
+        }
+#pragma endregion
+#pragma region openCfgFileBtn
         constexpr int openCfgFileBtnId = 0b11 * 4 + 5 * 1 + 4;
         auto openCfgFileBtn =
-            new wxButton(this, openCfgFileBtnId, _("editorDialog.open_file"));
+            new wxButton(this, openCfgFileBtnId, _("macroEditor.open_file"));
         openCfgFileBtn->Bind(wxEVT_BUTTON, [&](wxCommandEvent& event) {
             bool opened = false;
             if (key.type == script_type::in_line) {
@@ -73,8 +98,7 @@ class editorDialog : public wxDialog {
                 cfg /= config_name;
                 // open toml cfg file
                 opened = wxLaunchDefaultApplication(cfg.string());
-            } 
-            else {
+            } else {
                 // type = file
                 std::filesystem::path cfg(key.code);
                 if (cfg.is_absolute())
@@ -87,16 +111,32 @@ class editorDialog : public wxDialog {
                         opened = wxLaunchDefaultApplication(cfg.string());
                 }
             }
-            if (! opened) 
-                wxMessageBox(_("editorDialog.openCfgFileBtn.failedWhenOpeningFile"));
+            if (!opened)
+                wxMessageBox(
+                    _("editorDialog.openCfgFileBtn.failedWhenOpeningFile"));
         });
-
+#pragma endregion
+#pragma region editorDialogQuitBtn
+        constexpr int editorDialogQuitBtnId = 067 + 67 + 067 + 0x67;
+        auto editorDialogQuitBtn = new wxButton(this, editorDialogQuitBtnId,
+                                                _("editorDialog.QuitBtn"));
+        Bind(wxEVT_BUTTON, &editorDialog::onQuit, this, editorDialogQuitBtnId);
+#pragma endregion
+#pragma region buttomToolBtns
+        auto toolbar = new wxBoxSizer(wxHORIZONTAL);
+        toolbar->Add(openCfgFileBtn);
+        toolbar->Add(editorDialogQuitBtn);
+#pragma endregion
         // box layout
-        auto* sizer = new wxBoxSizer(wxVERTICAL);
-        sizer->Add(openCfgFileBtn);
+        auto sizer = new wxBoxSizer(wxVERTICAL);
+        sizer->Add(codeViewer);
+        sizer->Add(toolbar);
         SetSizerAndFit(sizer);
         CentreOnParent();
     };
+
+   private:
+    void onQuit(wxCommandEvent& event) { this->Close(); };
 };
 
 mainWindow::mainWindow(const wxString& title)

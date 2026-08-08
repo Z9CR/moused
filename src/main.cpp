@@ -1,7 +1,11 @@
+#include <wx/filefn.h>    // wxPathOnly
+#include <wx/intl.h>      // wxLocale / wxFileTranslationsLoader
+#include <wx/stdpaths.h>  // wxStandardPaths
 #include <adapter.hpp>
 #include <algorithm>
 #include <chrono>
 #include <config.hpp>
+#include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <macro.hpp>
@@ -13,10 +17,6 @@
 #include <toml.hpp>
 #include <ui.hpp>
 #include <utils.hpp>
-#include <filesystem>
-#include <wx/filefn.h>    // wxPathOnly
-#include <wx/intl.h>      // wxLocale / wxFileTranslationsLoader
-#include <wx/stdpaths.h>  // wxStandardPaths
 extern "C" {
 #include "lauxlib.h"
 #include "lua.h"
@@ -53,9 +53,10 @@ void warmup_macros() {
                     std::filesystem::path(platform_cfg_dir) / scriptPath;
             std::ifstream f(scriptPath);
             if (!f) {
-                log_msg("moused: cannot open script file `%s` (resolved to "
-                        "`%s`)\n",
-                        prop.code.c_str(), scriptPath.string().c_str());
+                log_msg(
+                    "moused: cannot open script file `%s` (resolved to "
+                    "`%s`)\n",
+                    prop.code.c_str(), scriptPath.string().c_str());
                 continue;
             }
             script.assign(std::istreambuf_iterator<char>(f),
