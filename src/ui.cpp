@@ -1,10 +1,12 @@
 #include <wx/grid.h>
+#include <wx/intl.h>
 #include <wx/menu.h>
 #include <wx/renderer.h>
 #include <wx/wx.h>
-#include <wx/intl.h>
+
 #include <algorithm>
 #include <config.hpp>
+#include <filesystem>
 #include <ui.hpp>
 #include <utils.hpp>
 
@@ -60,13 +62,38 @@ class editorDialog : public wxDialog {
    public:
     editorDialog(wxWindow* parent, key_property& key)
         : wxDialog(parent, wxID_ANY, _("macroEditor.title")) {
+        // declare items
+        constexpr int openCfgFileBtnId = 0b11 * 4 + 5 * 1 + 4;
+        auto openCfgFileBtn =
+            new wxButton(this, openCfgFileBtnId, _("editorDialog.open_file"));
+        openCfgFileBtn->Bind(wxEVT_BUTTON, [&](wxCommandEvent& event) {
+            bool opened = false;
+            if (key.type == script_type::in_line) {
+                std::filesystem::path cfg(platform_cfg_dir);
+                cfg /= config_name;
+                // open toml cfg file
+                opened = wxLaunchDefaultApplication(cfg.string());
+            } 
+            else {
+                // type = file
+                std::filesystem::path cfg(key.code);
+                if (cfg.is_absolute())
+                    // open abs path cfg
+                    opened = wxLaunchDefaultApplication(cfg.string());
+                else if (cfg.is_relative()) {
+                    cfg = std::filesystem::path(platform_cfg_dir) / cfg;
+                    if (std::filesystem::exists(cfg))
+                        // open relative path cfg
+                        opened = wxLaunchDefaultApplication(cfg.string());
+                }
+            }
+            if (! opened) 
+                wxMessageBox(_("editorDialog.openCfgFileBtn.failedWhenOpeningFile"));
+        });
+
+        // box layout
         auto* sizer = new wxBoxSizer(wxVERTICAL);
-        sizer->Add(new wxStaticText(this, wxID_ANY, comboNameOf(key)), 0,
-                   wxALIGN_CENTER | wxALL, 12);
-        sizer->Add(new wxStaticText(this, wxID_ANY, key.code), 0,
-                   wxALIGN_CENTER | wxALL, 12);
-        sizer->Add(new wxButton(this, wxID_OK, _("macroEditor.close")), 0,
-                   wxALIGN_CENTER | wxALL, 12);
+        sizer->Add(openCfgFileBtn);
         SetSizerAndFit(sizer);
         CentreOnParent();
     };
@@ -81,7 +108,8 @@ mainWindow::mainWindow(const wxString& title)
     wxToolBar* toolBar = CreateToolBar(wxTB_TEXT | wxTB_NOICONS);
 #pragma region openCfg
     constexpr int toolBarItemOpenCfgID = 0x6767;
-    toolBar->AddTool(toolBarItemOpenCfgID, _("toolbar.open_config"), wxNullBitmap);
+    toolBar->AddTool(toolBarItemOpenCfgID, _("toolbar.open_config"),
+                     wxNullBitmap);
     Bind(wxEVT_MENU, &mainWindow::openConfigDir, this, toolBarItemOpenCfgID);
 #pragma endregion
 #pragma region quit

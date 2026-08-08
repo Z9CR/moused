@@ -1,4 +1,6 @@
 #include <adapter.hpp>
+#include <algorithm>
+#include <cctype>
 #include <config.hpp>
 #include <filesystem>
 #include <format>
@@ -8,6 +10,20 @@
 #include <toml.hpp>
 #include <utils.hpp>
 #include <vector>
+
+namespace {
+// strip leading/trailing whitespace (space, \t, \r, \n, \v, \f). TOML
+// multiline strings (`"""..."""`) keep indentation and trailing newlines,
+// which are almost always accidental for a file path and harmless for Lua
+// scripts, so we normalize them here.
+std::string trim_ws(const std::string& s) {
+    auto not_space = [](unsigned char c) { return !std::isspace(c); };
+    const auto first = std::find_if(s.begin(), s.end(), not_space);
+    const auto last = std::find_if(s.rbegin(), s.rend(), not_space).base();
+    if (first >= last) return {};
+    return std::string(first, last);
+}
+}  // namespace
 
 // fallbacks
 int smoothmv_frametime = 4;
@@ -23,6 +39,8 @@ std::string platform_cfg_dir;
 
 // cfg name
 const std::string config_name = "config.toml";
+
+std::filesystem::path cfg = std::filesystem::path(platform_cfg_dir)/config_name;
 
 // get `std::string platform_cfg_dir`
 #pragma region init_cfg_dir_properties()
@@ -223,7 +241,7 @@ void refresh_config() {
             _property.type = script_type::file;
         else
             _property.type = script_type::in_line;
-        _property.code = key_profile.at("val").as_string();
+        _property.code = trim_ws(key_profile.at("val").as_string());
 
         // [key.loop] sub table
         const auto& loop = key_profile.at("loop").as_table();

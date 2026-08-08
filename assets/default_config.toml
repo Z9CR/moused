@@ -1,4 +1,4 @@
-# this is the default properties ver 8/6/2026
+# this is the default properties ver 8/8/2026
 
 #
 # a template hotkey-properties should like that
@@ -10,6 +10,13 @@
 # enabled = <bool>
 # type = 'inline' or 'file'
 # val = """lua code(if type='inline')""" or 'file path(if type='file')'
+#       file paths are resolved relative to this config's directory, so
+#       `val = "test.lua"` means `<config dir>/test.lua`.
+#       Windows absolute paths: use forward slashes
+#       (`val = "C:/Users/.../test.lua"`) or a single-quoted literal string
+#       (`val = 'C:\Users\...\test.lua'`). NEVER use a double-quoted
+#       backslash path (`val = "C:\Users\..."`) — in TOML `\U`, `\9`, `\A`...
+#       are invalid escapes and abort parsing.
 # [key.loop]
 # enabled = <bool>
 # times = <int>
@@ -72,6 +79,7 @@ max_window_width = 800
 max_window_height = 600
 
 [L]
+keys = ["LEFT_CONTROL","L"]
 enabled = false
 type = 'inline'
 val = """
@@ -87,6 +95,7 @@ times = 0
 delay = 0.0
 
 [J]
+keys = ["LEFT_CONTROL","J"]
 enabled = false
 type = 'inline'
 val = """
@@ -102,6 +111,7 @@ times = 0
 delay = 0.0
 
 [H]
+keys = ["LEFT_CONTROL","H"]
 enabled = false
 type = 'inline'
 val = """
@@ -117,6 +127,7 @@ times = 0
 delay = 0.0
 
 [K]
+keys = ["LEFT_CONTROL","K"]
 enabled = false
 type = 'inline'
 val = """
@@ -132,6 +143,7 @@ times = 0
 delay = 0.0
 
 [F1]
+keys = ["F1"]
 enabled = false
 type = 'inline'
 val = """
@@ -147,6 +159,7 @@ times = -1
 delay = 0.05
 
 [F12]
+keys = ["F12"]
 enabled = false
 type = 'inline'
 val = """

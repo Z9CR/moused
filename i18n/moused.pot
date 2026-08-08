@@ -44,3 +44,12 @@ msgstr ""
 #: src/ui.cpp
 msgid "macroView.editBtn"
 msgstr ""
+
+#: src/ui.cpp
+msgid "editorDialog.open_file"
+msgstr ""
+
+
+#: src/ui.cpp
+msgid "editorDialog.openCfgFileBtn.failedWhenOpeningFile"
+msgstr ""

@@ -13,6 +13,7 @@
 #include <toml.hpp>
 #include <ui.hpp>
 #include <utils.hpp>
+#include <filesystem>
 #include <wx/filefn.h>    // wxPathOnly
 #include <wx/intl.h>      // wxLocale / wxFileTranslationsLoader
 #include <wx/stdpaths.h>  // wxStandardPaths
@@ -43,10 +44,18 @@ void warmup_macros() {
         if (prop.type == script_type::in_line) {
             script = prop.code;
         } else if (prop.type == script_type::file) {
-            std::ifstream f(prop.code);
+            // resolve relative script paths against the config dir, so
+            // `val = "test.lua"` means `<config dir>/test.lua` regardless of
+            // the process working directory
+            std::filesystem::path scriptPath(prop.code);
+            if (scriptPath.is_relative())
+                scriptPath =
+                    std::filesystem::path(platform_cfg_dir) / scriptPath;
+            std::ifstream f(scriptPath);
             if (!f) {
-                log_msg("moused: cannot open script file `%s`\n",
-                        prop.code.c_str());
+                log_msg("moused: cannot open script file `%s` (resolved to "
+                        "`%s`)\n",
+                        prop.code.c_str(), scriptPath.string().c_str());
                 continue;
             }
             script.assign(std::istreambuf_iterator<char>(f),

@@ -9,7 +9,7 @@ msgstr ""
 "PO-Revision-Date: 2026-08-07 12:00+0800\n"
 "Last-Translator: \n"
 "Language-Team: Chinese (Simplified)\n"
-"Language: zh_CN\n"
+"Language: en_US\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -46,3 +46,11 @@ msgstr "Edit"
 #: src/ui.cpp
 msgid "macroView.editBtn"
 msgstr "Edit"
+
+#: src/ui.cpp
+msgid "editorDialog.open_file"
+msgstr "open file"
+
+#: src/ui.cpp
+msgid "editorDialog.openCfgFileBtn.failedWhenOpeningFile"
+msgstr "Error occurred when opening config file"
