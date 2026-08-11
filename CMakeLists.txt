@@ -67,7 +67,21 @@ FetchContent_Declare(
 )
 # set compilation of `wxWidget` as `Static` force in case `DLL`(or SO) linking err
 set(wxBUILD_SHARED OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(wx)
+
+if(APPLE)
+    # wxWidgets 3.3.3 + the current macOS SDK: building wx with C++20 or
+    # newer turns the cross-enum arithmetic in ColorSyncDeprecated.h
+    # (pulled in via Carbon/ApplicationServices) into a hard error.
+    # wx itself fully supports C++17, so build only the wx subproject at
+    # C++17 and keep the rest of moused on the project's C++26.
+    set(_moused_saved_cxx_std "${CMAKE_CXX_STANDARD}")
+    set(CMAKE_CXX_STANDARD 17)
+    FetchContent_MakeAvailable(wx)
+    set(CMAKE_CXX_STANDARD "${_moused_saved_cxx_std}")
+    unset(_moused_saved_cxx_std)
+else()
+    FetchContent_MakeAvailable(wx)
+endif()
 
 if(WIN32)
     # when use macro `wxIMPLEMENT_APP(MyApp)`, the enter func is `WinMain`,
@@ -86,6 +100,28 @@ target_link_libraries(moused PRIVATE toml11::toml11)
 target_link_libraries(moused PRIVATE lua)
 target_link_libraries(moused PRIVATE LuaBridge)
 target_link_libraries(moused PRIVATE wx::core wx::base)
+
+if(APPLE)
+    # mac backend uses CoreGraphics (CGEvent*) and ApplicationServices
+    # (AXIsProcessTrusted) to synthesize input & check Accessibility
+    target_link_libraries(moused PRIVATE
+        "-framework CoreGraphics"
+        "-framework ApplicationServices")
+
+    # Apple's libc++ hides std::jthread / std::stop_token (used by
+    # main.cpp, macro.cpp, macro_manager.cpp) unless this macro is defined
+    # on libc++ they are still gated as "incomplete experimental" features.
+    target_compile_definitions(moused PRIVATE _LIBCPP_ENABLE_EXPERIMENTAL)
+endif()
+
+if(APPLE)
+    # mac.cpp includes ApplicationServices/Quickdraw, whose
+    # ColorSyncDeprecated.h does cross-enum arithmetic that is a hard error
+    # in C++20+ (this Apple SDK header cannot be compiled with C++26).
+    # mac.cpp itself needs no C++20 features, so build only it at C++17.
+    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/mac.cpp
+        PROPERTIES COMPILE_OPTIONS "-std=gnu++17")
+endif()
 
 # i18n: compile every `i18n/<lang>.po` into `locale/<lang>/LC_MESSAGES/moused.mo`
 # and deploy it next to the executable, where wxLocale::AddCatalog("moused")

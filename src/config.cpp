@@ -128,7 +128,23 @@ void init_cfg_dir_properties() {
     throw std::runtime_error("failed to fetch config path");
 }
 #elif defined(__APPLE__)
-// MacOS
+// MacOS: `~/Library/moused/`
+#include <cstdlib>
+
+// Fetch `~/Library/moused/`, write into platform_cfg_dir
+// Uses $HOME, which is always the current user on macOS (no pkexec/sudo
+// elevation, unlike the Linux/BSD path).
+void init_cfg_dir_properties() {
+    const char* home = std::getenv("HOME");
+    if (home) {
+        std::filesystem::path cfg{home};
+        cfg /= "Library";
+        cfg /= "moused";
+        platform_cfg_dir = cfg.string();
+        return;
+    }
+    throw std::runtime_error("failed to fetch config path");
+}
 #else
 // unk sys
 #endif
