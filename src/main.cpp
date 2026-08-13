@@ -42,12 +42,12 @@ void warmup_macros() {
 
         std::string script;
         if (prop.type == script_type::in_line) {
-            script = prop.code;
+            script = prop.val;
         } else if (prop.type == script_type::file) {
             // resolve relative script paths against the config dir, so
             // `val = "test.lua"` means `<config dir>/test.lua` regardless of
             // the process working directory
-            std::filesystem::path scriptPath(prop.code);
+            std::filesystem::path scriptPath(prop.val);
             if (scriptPath.is_relative())
                 scriptPath =
                     std::filesystem::path(platform_cfg_dir) / scriptPath;
@@ -56,7 +56,7 @@ void warmup_macros() {
                 log_msg(
                     "moused: cannot open script file `%s` (resolved to "
                     "`%s`)\n",
-                    prop.code.c_str(), scriptPath.string().c_str());
+                    prop.val.c_str(), scriptPath.string().c_str());
                 continue;
             }
             script.assign(std::istreambuf_iterator<char>(f),
@@ -144,7 +144,7 @@ bool moused::OnInit() {
         init_cfg_dir_properties();
         mkdirs(platform_cfg_dir);
         touch_config_file(platform_cfg_dir, config_name);
-        refresh_config();
+        read_from_config();
 
         // pre-parse every enabled hotkey's script into cached macro_scripts
         warmup_macros();
@@ -217,14 +217,30 @@ bool moused::OnInit() {
 }
 
 int moused::OnExit() {
+    auto t0 = std::chrono::steady_clock::now();
+
+    // CRITICAL: set the global shutdown flag FIRST, before any join.
+    // Long-running mouse loops (move_to/translate smooth moves on Windows
+    // & Linux) poll this flag every frame and bail out immediately, so the
+    // unbounded joins below can never be blocked by an in-flight macro.
+    macro::request_global_shutdown();
+
     // stop the key listener thread
     if (g_listener.joinable()) g_listener.request_stop();
     // join it (jthread also auto-joins at destruction, but do it here so
     // the listener can't race our macro shutdown)
     if (g_listener.joinable()) g_listener.join();
+    log_msg("moused: listener joined in %d ms\n",
+            static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                                 std::chrono::steady_clock::now() - t0)
+                                 .count()));
 
     // stop & join every running macro worker
     macro::shutdown();
+    log_msg("moused: macro shutdown in %d ms\n",
+            static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                                 std::chrono::steady_clock::now() - t0)
+                                 .count()));
 
     return wxApp::OnExit();
 }

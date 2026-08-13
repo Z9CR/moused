@@ -11,12 +11,21 @@
 // only the cached macro_script is executed on the worker thread.
 
 #include <adapter.hpp>  // keyboard::keys
+#include <atomic>
 #include <macro.hpp>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 namespace macro {
+/// Global "app is shutting down" flag. Set by moused::OnExit() BEFORE any
+/// thread join, and polled by long-running platform mouse loops (e.g. the
+/// per-frame Sleep() inside move_to()/translate()) so an in-flight long
+/// smooth move cannot block an unbounded join on the UI thread.
+inline std::atomic<bool> g_shutdown_flag{false};
+
+/// Set the shutdown flag (used by OnExit).
+inline void request_global_shutdown() { g_shutdown_flag.store(true); }
 /// Build a canonical, order-independent signature for a key combo.
 /// {"L","LEFT_CONTROL"} and {"LEFT_CONTROL","L"} both yield the same
 /// signature.

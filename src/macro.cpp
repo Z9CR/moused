@@ -1,5 +1,5 @@
 #include <adapter.hpp>
-#include <condition_variable>
+#include <algorithm>
 #include <config.hpp>
 #include <format>
 #include <macro.hpp>
@@ -143,13 +143,21 @@ void dispatch_command(const command& cmd) {
 bool wait_for_or_stop(std::stop_token st, double ms) {
     if (ms <= 0.0) return !st.stop_requested();
 
-    static std::mutex mtx;
-    static std::condition_variable_any cv;
-    std::unique_lock<std::mutex> lk(mtx);
-    // wait_for returns cv_status::timeout on full delay, no_timeout if
-    // notified.
-    return !cv.wait_for(lk, st, std::chrono::duration<double, std::milli>(ms),
-                        [] { return false; });
+    // Poll in small slices so a stop request is honored promptly, without
+    // relying on a global shared condition_variable (which could otherwise
+    // be disturbed by concurrent workers waiting on the same cv). A 4 ms
+    // slice matches the smooth-move frame time, so a shutdown join waits at
+    // most ~4 ms for any worker that is inside this function.
+    const double total = std::max(ms, 4.0);
+    double waited = 0.0;
+    while (waited < total) {
+        if (st.stop_requested()) return false;
+        const double slice = std::min(4.0, total - waited);
+        std::this_thread::sleep_for(
+            std::chrono::duration<double, std::milli>(slice));
+        waited += slice;
+    }
+    return !st.stop_requested();
 }
 
 void run_macro_script(std::stop_token st, const macro_script& script,

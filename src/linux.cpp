@@ -11,6 +11,7 @@
 #include <config.hpp>
 #include <cstdio>
 #include <cstring>
+#include <macro_manager.hpp>
 #include <utils.hpp>
 
 #ifdef NULL
@@ -212,6 +213,8 @@ void translate(angle a, int distant, unsigned int time_ms) {
     double acc_x = 0.0, acc_y = 0.0;
 
     for (int i = 0; i < frames; ++i) {
+        if (macro::g_shutdown_flag.load()) return;
+
         acc_x += inc_x;
         acc_y += inc_y;
 
@@ -284,7 +287,11 @@ void move_to(unsigned int x, unsigned int y, unsigned int time_ms) {
     if (frames < 1) frames = 1;
 
     // interpolate and send each frame
+    // NOTE: bail out early on shutdown, else the UI thread's unbounded
+    // join in macro::shutdown() could block on this long-running loop.
     for (int i = 1; i <= frames; ++i) {
+        if (macro::g_shutdown_flag.load()) return;
+
         double t = static_cast<double>(i) / frames;
         int cur_x = start_x + (static_cast<int>(x) - start_x) * t;
         int cur_y = start_y + (static_cast<int>(y) - start_y) * t;
@@ -296,7 +303,7 @@ void move_to(unsigned int x, unsigned int y, unsigned int time_ms) {
         usleep(smoothmv_frametime * 1000);
     }
     // in case float deviation
-    move_to(x, y);
+    if (!macro::g_shutdown_flag.load()) move_to(x, y);
 }
 
 /// @brief move the mouse to (x, y) (right = x+, down = y +)
