@@ -5,6 +5,7 @@
 #include <adapter.hpp>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 // the type of a hotkey's bound script
 enum class script_type { in_line = 0, file = 1 };
@@ -24,8 +25,10 @@ struct key_property {
     std::vector<keyboard::keys> keys;
     bool enabled;
     script_type type;
-    std::string code;
+    std::string val;
     loopment loop;
+    // `_table_name` is for flash only
+    std::string _table_name;
 };
 
 extern const std::string mainwindow_title;
@@ -60,6 +63,11 @@ extern std::vector<key_property> keys_properties;
 // on failure
 void init_cfg_dir_properties();
 
+// flash `keys_properties` into config file
+void flash_into_config();
+
+// func to make sure config file exists
 void touch_config_file(const std::string& parent_path, const std::string& name);
 
-void refresh_config();
+// read content from config file and write in `keys_properties`
+void read_from_config();

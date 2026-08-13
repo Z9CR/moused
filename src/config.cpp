@@ -40,7 +40,9 @@ std::string platform_cfg_dir;
 // cfg name
 const std::string config_name = "config.toml";
 
-std::filesystem::path cfg = std::filesystem::path(platform_cfg_dir)/config_name;
+// since `platform_cfg_dir` now is not inited, so we need to get path this way:
+// std::filesystem::path cfg =
+//    std::filesystem::path(platform_cfg_dir) / config_name;
 
 // get `std::string platform_cfg_dir`
 #pragma region init_cfg_dir_properties()
@@ -153,6 +155,66 @@ void init_cfg_dir_properties() {
 // this var to store properties
 std::vector<key_property> keys_properties{};
 
+void flash_into_config() {
+    std::filesystem::path cfg =
+        std::filesystem::path(platform_cfg_dir) / config_name;
+    toml::value conf = toml::parse(cfg.string());
+    conf["global"]["smooth_frametime_ms"] = smoothmv_frametime;
+    conf["global"]["max_window_width"] = mainwindow_max_width;
+    conf["global"]["max_window_height"] = mainwindow_max_height;
+
+    // gen keyboard::keys -> string name map (mirrors read_from_config)
+    // `keys = [...]` in config stores *names* (["LEFT_CONTROL","L"]), not enum
+    // values, so flash must convert back to names before writing.
+    const struct {
+        int k;
+        const char* v;
+    } table[] = {
+#define KEYS_ITEM(name, value) {value, #name},
+        KEYS_LIST(KEYS_ITEM)
+#undef KEYS_ITEM
+    };
+    auto key_to_name = [&](keyboard::keys key) -> std::string {
+        for (const auto& item : table)
+            if (static_cast<keyboard::keys>(item.k) == key) return item.v;
+        return "NONE";
+    };
+
+    for (const auto& key : keys_properties) {
+        std::vector<std::string> key_names;
+        key_names.reserve(key.keys.size());
+        for (auto k : key.keys) key_names.push_back(key_to_name(k));
+        conf[key._table_name]["keys"] = key_names;
+        conf[key._table_name]["enabled"] = key.enabled;
+        conf[key._table_name]["type"] =
+            key.type == script_type::in_line ? "inline" : "file";
+        conf[key._table_name]["val"] = key.val;
+        conf[key._table_name]["loop"]["enabled"] = key.loop.enabled;
+        conf[key._table_name]["loop"]["times"] = key.loop.times;
+        conf[key._table_name]["loop"]["delay"] = key.loop.delay;
+    }
+    // Write back to file.
+    // NOTE: std::ofstream does NOT throw on open/write failure by default —
+    // it only sets failbit/badbit. So we must check the stream state
+    // explicitly and translate failures into exceptions for the caller
+    // (ui.cpp wraps flash_into_config() in try/catch to undo the toggle).
+    std::ofstream of{cfg};
+    if (!of) {
+        throw std::runtime_error(std::format(
+            "moused: failed to open config file `{}`", cfg.string()));
+    }
+    of << toml::format(conf);
+    if (!of) {
+        throw std::runtime_error(std::format(
+            "moused: failed to write config file `{}`", cfg.string()));
+    }
+    of.close();
+    if (!of) {
+        throw std::runtime_error(std::format(
+            "moused: failed to flush config file `{}`", cfg.string()));
+    }
+}
+
 void touch_config_file(const std::string& parent_path,
                        const std::string& name) {
     // if the file already exists, do nothing
@@ -168,7 +230,7 @@ void touch_config_file(const std::string& parent_path,
     }
 }
 
-void refresh_config() {
+void read_from_config() {
     std::filesystem::path cfg(platform_cfg_dir);
     cfg /= config_name;
     toml::value _props = toml::parse(cfg.string());
@@ -213,6 +275,8 @@ void refresh_config() {
         // 2 structures to save profile temporally
         loopment _loopment{};
         key_property _property{};
+
+        _property._table_name = key.data();
         // `keys` is MANDATORY: the combo is declared strictly in this array
         // (["LEFT_CONTROL", "L"]), never via the section name. Names come from
         // KEYS_LIST; unknown names are rejected here.
@@ -257,7 +321,7 @@ void refresh_config() {
             _property.type = script_type::file;
         else
             _property.type = script_type::in_line;
-        _property.code = trim_ws(key_profile.at("val").as_string());
+        _property.val = trim_ws(key_profile.at("val").as_string());
 
         // [key.loop] sub table
         const auto& loop = key_profile.at("loop").as_table();

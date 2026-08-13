@@ -69,12 +69,12 @@ class editorDialog : public wxDialog {
         constexpr int codeViewerId = 0x191 + 9 * 810;
         wxStaticText* codeViewer;
         if (key.type == script_type::in_line) {
-            codeViewer = new wxStaticText(this, codeViewerId, key.code);
+            codeViewer = new wxStaticText(this, codeViewerId, key.val);
         } else {
             // type = file
-            std::filesystem::path cfg(key.code);
+            std::filesystem::path cfg(key.val);
             if (cfg.is_absolute()) {
-                std::ifstream f(key.code);
+                std::ifstream f(key.val);
                 std::stringstream buffer{};
                 buffer << f.rdbuf();
                 codeViewer = new wxStaticText(this, codeViewerId, buffer.str());
@@ -100,7 +100,7 @@ class editorDialog : public wxDialog {
                 opened = wxLaunchDefaultApplication(cfg.string());
             } else {
                 // type = file
-                std::filesystem::path cfg(key.code);
+                std::filesystem::path cfg(key.val);
                 if (cfg.is_absolute())
                     // open abs path cfg
                     opened = wxLaunchDefaultApplication(cfg.string());
@@ -172,9 +172,18 @@ mainWindow::mainWindow(const wxString& title)
     macroViewer->SetRowLabelSize(0);
     // all cells become read-only / non-editable
     macroViewer->EnableEditing(false);
-    wxGridCellAttr* attr = new wxGridCellAttr();
-    attr->SetRenderer(new gridBtnRender());
-    macroViewer->SetColAttr(2, attr);
+    // NOTE: each column needs its OWN attr object — wxGrid::SetColAttr()
+    // takes ownership of the pointer, so sharing one attr between two
+    // columns double-frees it when the grid is destroyed. That crash on
+    // window close used to leave the process visible as "Not Responding"
+    // in Task Manager even after its memory/CPU had dropped to zero.
+    wxGridCellAttr* attrBtn0 = new wxGridCellAttr();
+    attrBtn0->SetRenderer(new gridBtnRender());
+    macroViewer->SetColAttr(0, attrBtn0);
+
+    wxGridCellAttr* attrBtn2 = new wxGridCellAttr();
+    attrBtn2->SetRenderer(new gridBtnRender());
+    macroViewer->SetColAttr(2, attrBtn2);
     // columns' names
     macroViewer->SetColLabelValue(0, _("macroViewer.enabledCol"));
     macroViewer->SetColLabelValue(1, _("macroViewer.keyCol"));
@@ -186,14 +195,35 @@ mainWindow::mainWindow(const wxString& title)
         macroViewer->SetCellValue(i, 2, _("macroView.editBtn"));
     }
     macroViewer->Bind(wxEVT_GRID_CELL_LEFT_CLICK, [=](wxGridEvent& evt) {
-        if (evt.GetCol() == 2) {
-            const int row = evt.GetRow();
-            if (row >= 0 && row < static_cast<int>(keys_properties.size())) {
-                // ShowModal() blocks until the dialog is closed and disables
-                // this frame meanwhile, so the grid can't be clicked again
-                editorDialog dlg(this, keys_properties[row]);
-                dlg.ShowModal();
-            }
+        const int row = evt.GetRow();
+        const int col = evt.GetCol();
+        switch (col) {
+            case 0:
+                if (row >= 0 &&
+                    row < static_cast<int>(keys_properties.size())) {
+                    // when Switch clicked, reverse enable && disable
+                    try {
+                        keys_properties[row].enabled = !keys_properties[row].enabled;
+                        macroViewer->SetCellValue(row, col, keys_properties[row].enabled ? "Y" : "N");
+                        flash_into_config();
+                    }
+                    catch (const std::exception& e) {
+                        // when err, undo switch
+                        keys_properties[row].enabled = !keys_properties[row].enabled;
+                        macroViewer->SetCellValue(row, col, keys_properties[row].enabled ? "Y" : "N");
+                    }
+                }
+                break;
+            case 2:
+                if (row >= 0 &&
+                    row < static_cast<int>(keys_properties.size())) {
+                    // ShowModal() blocks until the dialog is closed and
+                    // disables this frame meanwhile, so the grid can't be
+                    // clicked again
+                    editorDialog dlg(this, keys_properties[row]);
+                    dlg.ShowModal();
+                }
+                break;
         }
         evt.Skip();
     });

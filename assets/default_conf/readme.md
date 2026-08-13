@@ -1,0 +1,83 @@
+## a template hotkey-properties should like that
+```toml
+[key]
+keys = ["L"]                    # combo keys (array; >=1). Names come from
+                                # KEYS_LIST, e.g. "L", "F1", "LEFT_CONTROL",
+                                # "LEFT_SHIFT", "LEFT_ALT". When omitted,
+                                # the section name is used as a single key
+enabled = <bool>
+type = 'inline' or 'file'
+val = """lua code(if type='inline')""" or 'file path(if type='file')'
+      file paths are resolved relative to this config's directory, so
+      `val = "test.lua"` means `<config dir>/test.lua`.
+      Windows absolute paths: use forward slashes
+      (`val = "C:/Users/.../test.lua"`) or a single-quoted literal string
+      (`val = 'C:\Users\...\test.lua'`). NEVER use a double-quoted
+      backslash path (`val = "C:\Users\..."`) — in TOML `\U`, `\9`, `\A`...
+      are invalid escapes and abort parsing.
+[key.loop]
+enabled = <bool>
+times = <int>
+# times = -1: infinity loop
+delay = <double>
+# delay unit: ms
+```
+
+## example combo 
+(table name is just an identifier, must be unique):
+```toml
+[CTRL_L]
+enabled = true
+keys = ["LEFT_CONTROL", "L"]
+type = 'inline'
+val = """..."""
+[CTRL_L.loop]
+enabled = true
+times = 0
+delay = 0.0
+```
+
+while a longer combo is held, its shorter overlapping sub-key combos are
+suppressed (e.g. holding Ctrl+L keeps plain L from firing).
+
+
+the code (whether in file or inline) must contain a function called
+`run()` that RETURNS AN ARRAY of instruction-tables:
+```lua
+  return {
+      {cmd = <cmd>, args = {<double>, <double>, ...}, delay = <double>},
+      ...
+  }
+```
+
+### `args` 
+are all Lua numbers (doubles); the C++ side casts them to
+  whatever type each adapter function needs.
+  Per-command argument lists:
+      translate:  {angle(deg), distant(px), time_ms?}
+      move_to:    {x(px), y(px), time_ms?}
+      click:      {mouse_btn.*}
+      press:      {mouse_btn.*}
+      release:    {mouse_btn.*}
+      wheel:      {wheel_rotation.*, scale}
+### `delay` 
+is OPTIONAL (measured in ms): the time to wait BEFORE this
+  instruction. When omitted, it falls back to 0.0.
+  The examples below always write it out explicitly — that is the
+  canonical template form.
+
+## tip
+  mouse_btn.LMB, mouse_btn.RMB, mouse_btn.MMB, mouse_btn.XB1, mouse_btn.XB2,
+  wheel_rotation.WU, wheel_rotation.WD
+are declared beforehand for mouse commands
+
+## prop means
+`smooth_frametime_ms = 4`
+when smooth moving,
+prog will slice the path to dest into pieces,
+and the value below is how long will stay in per pieces
+unit: ms
+
+`max_window_width`
+`max_window_height`
+window size upper bound; 0 = no limit
