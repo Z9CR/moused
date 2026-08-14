@@ -24,6 +24,26 @@ elseif(BSD)
 endif()
 
 include(FetchContent)
+
+# ---- embed the tray icon PNG directly into the binary ----
+# Turn assets/mousec.png into a C byte-array header so the resulting
+# executable is a single self-contained file (no assets dir needed at
+# runtime). This runs at configure time, which is fine for a static asset.
+set(GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)
+file(MAKE_DIRECTORY ${GENERATED_DIR})
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/assets/mousec.png PNG_HEX HEX)
+# "89504E470D0A1A0A..." -> "0x89, 0x50, 0x4E, ..."
+string(REGEX REPLACE "(..)" "0x\\1, " PNG_BYTES "${PNG_HEX}")
+string(REGEX REPLACE ", $" "" PNG_BYTES "${PNG_BYTES}")
+set(PNG_HEADER ${GENERATED_DIR}/mousec_png.h)
+file(WRITE ${PNG_HEADER}
+"// Auto-generated from assets/mousec.png (do not edit).\n"
+"#pragma once\n"
+"#include <cstddef>\n"
+"static const unsigned char mousec_png_data[] = {\n    ${PNG_BYTES}\n};\n"
+"static const std::size_t mousec_png_size = sizeof(mousec_png_data);\n"
+)
+
 # toml11
 FetchContent_Declare(
     toml11
@@ -95,7 +115,7 @@ else()
     add_executable(moused ${COMMON_SOURCES} ${PLATFORM_SOURCES} ${INCLUDES})
 endif()
 
-target_include_directories(moused PRIVATE ${INCLUDES_DIR})
+target_include_directories(moused PRIVATE ${INCLUDES_DIR} ${GENERATED_DIR})
 target_link_libraries(moused PRIVATE toml11::toml11)
 target_link_libraries(moused PRIVATE lua)
 target_link_libraries(moused PRIVATE LuaBridge)

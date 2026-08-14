@@ -1,3 +1,4 @@
+#pragma region includes
 #include <wx/filefn.h>    // wxPathOnly
 #include <wx/intl.h>      // wxLocale / wxFileTranslationsLoader
 #include <wx/stdpaths.h>  // wxStandardPaths
@@ -23,6 +24,7 @@ extern "C" {
 #include "lualib.h"
 }
 #include "LuaBridge/LuaBridge.h"
+#pragma endregion
 
 namespace {
 // Pre-parse every enabled hotkey's Lua script into a cached macro_script.
@@ -212,7 +214,6 @@ bool moused::OnInit() {
     // run ui
     mainWindow* mw = new mainWindow("moused");
     mw->Show(true);
-
     return true;
 }
 

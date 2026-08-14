@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: moused\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-08 07:11+0000\n"
+"POT-Creation-Date: 2026-08-14 01:25+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,42 +18,50 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: src/ui.cpp:66
-msgid "macroEditor.title"
+#: src/ui.cpp:55
+msgid "tray.showMw"
 msgstr ""
 
-#: src/ui.cpp:93
-msgid "macroEditor.open_file"
+#: src/ui.cpp:56
+msgid "tray.quit"
 msgstr ""
 
 #: src/ui.cpp:116
+msgid "macroEditor.title"
+msgstr ""
+
+#: src/ui.cpp:143
+msgid "macroEditor.open_file"
+msgstr ""
+
+#: src/ui.cpp:166
 msgid "editorDialog.openCfgFileBtn.failedWhenOpeningFile"
 msgstr ""
 
-#: src/ui.cpp:121
+#: src/ui.cpp:172
 msgid "editorDialog.QuitBtn"
 msgstr ""
 
-#: src/ui.cpp:141
+#: src/ui.cpp:201
 msgid "toolbar.open_config"
 msgstr ""
 
-#: src/ui.cpp:149
+#: src/ui.cpp:209
 msgid "toolbar.quit"
 msgstr ""
 
-#: src/ui.cpp:169
+#: src/ui.cpp:238
 msgid "macroViewer.enabledCol"
 msgstr ""
 
-#: src/ui.cpp:170
+#: src/ui.cpp:239
 msgid "macroViewer.keyCol"
 msgstr ""
 
-#: src/ui.cpp:171
+#: src/ui.cpp:240
 msgid "macroViewer.editCol"
 msgstr ""
 
-#: src/ui.cpp:176
+#: src/ui.cpp:245
 msgid "macroView.editBtn"
 msgstr ""

@@ -18,6 +18,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
+#: src/ui.cpp:55
+msgid "tray.showMw"
+msgstr "Show"
+
+#: src/ui.cpp:56
+msgid "tray.quit"
+msgstr "Quit"
+
+
 #: src/ui.cpp:66
 msgid "macroEditor.title"
 msgstr "edit macro"

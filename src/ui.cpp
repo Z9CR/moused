@@ -1,16 +1,20 @@
 #include <wx/grid.h>
 #include <wx/intl.h>
 #include <wx/menu.h>
+#include <wx/mstream.h>
 #include <wx/renderer.h>
+#include <wx/taskbar.h>
 #include <wx/wx.h>
 
 #include <algorithm>
 #include <config.hpp>
 #include <filesystem>
 #include <fstream>
+
 #include <sstream>
 #include <ui.hpp>
 #include <utils.hpp>
+#include <mousec_png.h>  // generated at build time from assets/mousec.png
 
 #define KEY_ITEM(v, k) {#v, k},
 const static struct {
@@ -36,6 +40,52 @@ std::string comboNameOf(const key_property& prop) {
     }
     return name.empty() ? std::string("NONE") : name;
 }
+
+constexpr int menuQuitBtnId = 0x6 + 7;
+constexpr int menuShowMWBtnId = 0x6 + 7 + 114;
+
+class MyTaskBarIcon : public wxTaskBarIcon {
+   public:
+    explicit MyTaskBarIcon(mainWindow* parent) : m_parent(parent) {}
+
+    // MSW requires the popup menu to be re-created on every show, so build a
+    // fresh menu here each time instead of caching one.
+    virtual wxMenu* CreatePopupMenu() wxOVERRIDE {
+        wxMenu* menu = new wxMenu();
+        menu->Append(menuShowMWBtnId, _("tray.showMw"));
+        menu->Append(menuQuitBtnId, _("tray.quit"));
+        return menu;
+    }
+
+    void OnMenuEvent(wxCommandEvent& event) {
+        if (event.GetId() == menuShowMWBtnId) {
+            showMainWindow();
+        } else if (event.GetId() == menuQuitBtnId) {
+            m_parent->requestQuit();
+        }
+    }
+
+    void OnLeftDClick(wxTaskBarIconEvent& event) { showMainWindow(); }
+
+   private:
+    void showMainWindow() {
+        m_parent->Show(true);
+        if (m_parent->IsIconized()) m_parent->Iconize(false);
+        m_parent->Raise();
+        m_parent->SetFocus();
+    }
+
+    mainWindow* m_parent;
+    wxDECLARE_EVENT_TABLE();
+};
+
+// clang-format off
+wxBEGIN_EVENT_TABLE(MyTaskBarIcon, wxTaskBarIcon)
+    EVT_MENU(menuShowMWBtnId, MyTaskBarIcon::OnMenuEvent)
+    EVT_MENU(menuQuitBtnId, MyTaskBarIcon::OnMenuEvent)
+    EVT_TASKBAR_LEFT_DCLICK(MyTaskBarIcon::OnLeftDClick)
+wxEND_EVENT_TABLE();
+// clang-format on
 
 class gridBtnRender : public wxGridCellRenderer {
    public:
@@ -203,14 +253,17 @@ mainWindow::mainWindow(const wxString& title)
                     row < static_cast<int>(keys_properties.size())) {
                     // when Switch clicked, reverse enable && disable
                     try {
-                        keys_properties[row].enabled = !keys_properties[row].enabled;
-                        macroViewer->SetCellValue(row, col, keys_properties[row].enabled ? "Y" : "N");
+                        keys_properties[row].enabled =
+                            !keys_properties[row].enabled;
+                        macroViewer->SetCellValue(
+                            row, col, keys_properties[row].enabled ? "Y" : "N");
                         flash_into_config();
-                    }
-                    catch (const std::exception& e) {
+                    } catch (const std::exception& e) {
                         // when err, undo switch
-                        keys_properties[row].enabled = !keys_properties[row].enabled;
-                        macroViewer->SetCellValue(row, col, keys_properties[row].enabled ? "Y" : "N");
+                        keys_properties[row].enabled =
+                            !keys_properties[row].enabled;
+                        macroViewer->SetCellValue(
+                            row, col, keys_properties[row].enabled ? "Y" : "N");
                     }
                 }
                 break;
@@ -245,9 +298,83 @@ mainWindow::mainWindow(const wxString& title)
     this->Fit();
 #pragma endregion
 #pragma endregion
+
+#pragma region tray
+    // NOTE: must create the DERIVED MyTaskBarIcon (not wxTaskBarIcon) so the
+    // CreatePopupMenu() override and the event table take effect.
+    this->tray = new MyTaskBarIcon(this);
+
+    // Register image handlers BEFORE loading the PNG: wxWidgets ships with
+    // zero handlers by default, so wxImage::LoadFile() would fail with
+    // "unknown image type" otherwise. wxInitAllImageHandlers() is idempotent.
+    wxInitAllImageHandlers();
+
+    // Load the tray icon from the PNG bytes embedded at build time, keeping
+    // the executable a single self-contained file (no assets/ dir needed at
+    // runtime). NOTE: wxBitmap has no stream LoadFile() on MSW, but
+    // wxImage::LoadFile(wxInputStream&) is portable (wxPNGHandler).
+    wxIcon ico;
+    {
+        wxMemoryInputStream mis(mousec_png_data, mousec_png_size);
+        wxImage img;
+        if (img.LoadFile(mis, wxBITMAP_TYPE_PNG))
+            ico.CopyFromBitmap(wxBitmap(img));
+    }
+    if (!ico.IsOk() || !this->tray->SetIcon(ico)) {
+        wxLogError("Moused: cannot create tray icon (embedded PNG invalid)");
+        // a broken tray degrades to a normal top-level app: closing the
+        // window then really exits (handled in onClose()).
+        delete this->tray;
+        this->tray = nullptr;
+    }
+
+    // closing the frame hides it to the tray instead of exiting
+    this->Bind(wxEVT_CLOSE_WINDOW, &mainWindow::onClose, this);
+#pragma endregion
 }
 
-void mainWindow::onQuit(wxCommandEvent&) { this->Close(); }
+void mainWindow::requestQuit() {
+    // shared by the toolbar Quit button and the tray "quit" menu entry.
+    if (this->m_quitting) return;  // re-entrancy guard
+    this->m_quitting = true;
+    // RemoveIcon() makes the shell forget the tray icon immediately, so it
+    // does not linger after the process has exited. NOTE: do NOT delete the
+    // tray here — when quit comes from the tray menu, the tray's internal
+    // hidden window is still inside its own event handler, and deleting the
+    // tray from within that handler triggers a wxWidgets assert. The tray is
+    // deleted safely in ~mainWindow() once the event has fully unwound.
+    if (this->tray) this->tray->RemoveIcon();
+    this->Close();
+}
+
+mainWindow::~mainWindow() {
+    // Safe point to free the tray: wxTaskBarIconWindow is no longer
+    // processing any event here. If quit came from the tray menu, this
+    // destructor runs only after that event handler has returned.
+    if (this->tray) {
+        delete this->tray;
+        this->tray = nullptr;
+    }
+}
+
+void mainWindow::onQuit(wxCommandEvent&) { this->requestQuit(); }
+
+void mainWindow::onClose(wxCloseEvent& ev) {
+    if (this->m_quitting) {
+        // requestQuit() already removed the tray icon; allow the window to
+        // really close so the app exits.
+        ev.Skip();
+    } else if (this->tray) {
+        // tray still active: closing the window only hides it, the app
+        // keeps running in the background (tray double-click or "show" menu
+        // re-opens it; "quit" menu really exits).
+        this->Hide();
+        if (ev.CanVeto()) ev.Veto();
+    } else {
+        // no tray (e.g. icon failed to load): close really exits
+        ev.Skip();
+    }
+}
 
 void mainWindow::openConfigDir(wxCommandEvent&) {
     if (!wxDirExists(platform_cfg_dir.c_str())) {
