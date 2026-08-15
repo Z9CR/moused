@@ -1,7 +1,7 @@
 #pragma once
 
 // X-Macros to generate enum
-// because if we builtin them, it's hard to pass the param to lua side
+// (single source of truth for names & values used across platforms)
 
 #pragma region MOUSE_BTN_LIST
 #define MOUSE_BTN_LIST(ITEM)            \
@@ -16,16 +16,6 @@
 #define WHEEL_ROTATION_LIST(ITEM) \
     ITEM(WU, 0) /* WheelUp   */   \
     ITEM(WD, 1) /* WheelDown */
-#pragma endregion
-
-#pragma region COMMAND_LIST
-#define COMMAND_LIST(ITEM) \
-    ITEM(translate, 0)     \
-    ITEM(move_to, 1)       \
-    ITEM(click, 2)         \
-    ITEM(press, 3)         \
-    ITEM(release, 4)       \
-    ITEM(wheel, 5)
 #pragma endregion
 
 #pragma region KEYS_LIST

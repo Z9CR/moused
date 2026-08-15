@@ -46,6 +46,11 @@ void register_macro(const std::vector<keyboard::keys>& keys,
     g_scripts[combo_sig(keys)] = script_entry{script, loop};
 }
 
+void clear_macros() {
+    std::lock_guard<std::mutex> lk(g_mtx);
+    g_scripts.clear();
+}
+
 void toggle(const std::vector<keyboard::keys>& keys) {
     const std::string sig = combo_sig(keys);
     std::lock_guard<std::mutex> lk(g_mtx);

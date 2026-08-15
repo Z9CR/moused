@@ -4,64 +4,44 @@ max_window_width = 800
 max_window_height = 600
 
 [L]
-keys = ["LEFT_CONTROL","L"]
+keys = ["LEFT_CONTROL", "L"]
 enabled = false
 type = 'inline'
-val = """
-    function run()
-        return {
-            {cmd = cmd.translate, args = {0.0, 32, 10}, delay = 0.0},
-        }
-    end
-"""
+[L.onActive]
+val = [{ cmd = 'translate', args = [0, 32, 10], delay = 0 }]
 [L.loop]
 enabled = false
 times = 0
 delay = 0.0
 
 [J]
-keys = ["LEFT_CONTROL","J"]
+keys = ["LEFT_CONTROL", "J"]
 enabled = false
 type = 'inline'
-val = """
-    function run()
-        return {
-            {cmd = cmd.translate, args = {90.0, 32, 10}, delay = 0.0},
-        }
-    end
-"""
+[J.onActive]
+val = [{ cmd = 'translate', args = [90, 32, 10], delay = 0 }]
 [J.loop]
 enabled = false
 times = 0
 delay = 0.0
 
 [H]
-keys = ["LEFT_CONTROL","H"]
+keys = ["LEFT_CONTROL", "H"]
 enabled = false
 type = 'inline'
-val = """
-    function run()
-        return {
-            {cmd = cmd.translate, args = {180.0, 32, 10}, delay = 0.0},
-        }
-    end
-"""
+[H.onActive]
+val = [{ cmd = 'translate', args = [180, 32, 10], delay = 0 }]
 [H.loop]
 enabled = false
 times = 0
 delay = 0.0
 
 [K]
-keys = ["LEFT_CONTROL","K"]
+keys = ["LEFT_CONTROL", "K"]
 enabled = false
 type = 'inline'
-val = """
-    function run()
-        return {
-            {cmd = cmd.translate, args = {270.0, 32, 10}, delay = 0.0},
-        }
-    end
-"""
+[K.onActive]
+val = [{ cmd = 'translate', args = [-90, 32, 10], delay = 0 }]
 [K.loop]
 enabled = false
 times = 0
@@ -71,13 +51,8 @@ delay = 0.0
 keys = ["F1"]
 enabled = false
 type = 'inline'
-val = """
-    function run()
-        return {
-            {cmd = cmd.click, args = {mouse_btn.LMB}, delay = 0.0},
-        }
-    end
-"""
+[F1.onActive]
+val = [{ cmd = 'click', args = 'LMB', delay = 0 }]
 [F1.loop]
 enabled = true
 times = -1
@@ -87,16 +62,21 @@ delay = 0.05
 keys = ["F12"]
 enabled = false
 type = 'inline'
-val = """
-    function run()
-        -- a complex macro: multiple instructions, each with an explicit delay
-        return {
-            {cmd = cmd.click,     args = {mouse_btn.LMB},         delay = 0.0},
-            {cmd = cmd.wheel,     args = {wheel_rotation.WU, 1.0}, delay = 100.0},
-            {cmd = cmd.translate, args = {0.0, 32, 10},           delay = 50.0},
-        }
-    end
-"""
+[F12.onActive]
+val = [
+    { cmd = 'click', args = [
+        'LMB',
+    ], delay = 0.0 },
+    { cmd = 'wheel', args = [
+        'WU',
+        1.0,
+    ], delay = 100.0 },
+    { cmd = 'translate', args = [
+        0.0,
+        32,
+        10,
+    ], delay = 50.0 },
+]
 [F12.loop]
 enabled = false
 times = 0

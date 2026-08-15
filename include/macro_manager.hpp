@@ -7,7 +7,7 @@
 // pressing it again requests the macro to stop.
 // Different combos may run their macros concurrently.
 //
-// Scripts are pre-parsed once at startup (see parse_lua_result); at runtime
+// Scripts are pre-parsed once at config load time (see config.cpp); at runtime
 // only the cached macro_script is executed on the worker thread.
 
 #include <adapter.hpp>  // keyboard::keys
@@ -35,6 +35,11 @@ std::string combo_sig(const std::vector<keyboard::keys>& keys);
 /// loop settings. Re-registering the same combo replaces its entry.
 void register_macro(const std::vector<keyboard::keys>& keys,
                     const macro_script& script, const loopment& loop);
+
+/// Drop every registered macro (used to re-sync from the UI enable/disable
+/// toggle). Running worker threads are unaffected — they run on a copy
+/// captured at start; stop them via toggle/shutdown.
+void clear_macros();
 
 /// Toggle a hotkey combo: start its macro if not running, otherwise
 /// request the running instance to stop.

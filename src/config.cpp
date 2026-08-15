@@ -5,8 +5,11 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <macro_manager.hpp>
+#include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <toml.hpp>
 #include <utils.hpp>
 #include <vector>
@@ -14,14 +17,153 @@
 namespace {
 // strip leading/trailing whitespace (space, \t, \r, \n, \v, \f). TOML
 // multiline strings (`"""..."""`) keep indentation and trailing newlines,
-// which are almost always accidental for a file path and harmless for Lua
-// scripts, so we normalize them here.
+// which are almost always accidental for a file path, so we normalize them
+// here.
 std::string trim_ws(const std::string& s) {
     auto not_space = [](unsigned char c) { return !std::isspace(c); };
     const auto first = std::find_if(s.begin(), s.end(), not_space);
     const auto last = std::find_if(s.rbegin(), s.rend(), not_space).base();
     if (first >= last) return {};
     return std::string(first, last);
+}
+
+// Resolve a possibly-relative file path (a `replay` type `val`) against the
+// config directory — mirrors the old `type = 'file'` script path handling.
+// Empty input stays empty (no `onInterrupt`).
+std::string resolve_config_path(const std::string& p) {
+    if (p.empty()) return {};
+    std::filesystem::path path(p);
+    if (path.is_relative())
+        path = std::filesystem::path(platform_cfg_dir) / path;
+    return path.string();
+}
+
+// convert a TOML number (integer or floating) to double
+double to_double(const toml::value& v) {
+    if (v.is_integer()) return static_cast<double>(v.as_integer());
+    if (v.is_floating()) return v.as_floating();
+    throw std::runtime_error("moused: expected a number in config file");
+}
+
+// resolve a string `args` element ('LMB', 'WU', ...) to its enum value
+double parse_arg_name(const std::string& name) {
+#define ARG_NAME_ITEM(n, v) {#n, static_cast<double>(v)},
+    static const struct {
+        std::string_view name;
+        double value;
+    } arg_names[] = {MOUSE_BTN_LIST(ARG_NAME_ITEM) WHEEL_ROTATION_LIST(ARG_NAME_ITEM)};
+#undef ARG_NAME_ITEM
+    for (const auto& e : arg_names)
+        if (e.name == name) return e.value;
+    throw std::runtime_error(
+        std::format("moused: unknown command argument `{}` in config file", name));
+}
+
+// convert a single `args` element (number or quoted name) to a double
+double parse_arg(const toml::value& v) {
+    if (v.is_string()) return parse_arg_name(v.as_string());
+    if (v.is_integer()) return static_cast<double>(v.as_integer());
+    if (v.is_floating()) return v.as_floating();
+    throw std::runtime_error(
+        "moused: command argument must be a number or a quoted name "
+        "('LMB', 'WU', ...)");
+}
+
+// parse a [key.onActive].val / [key.onInterrupt].val array of instruction
+// tables into a macro_script:
+//     val = [{ cmd = 'translate', args = [0, 32, 10], delay = 0 }, ...]
+// `delay` is optional and defaults to 0.0; `args` may also be a bare scalar
+// (`args = 'LMB'` is equivalent to `args = ['LMB']`).
+macro_script parse_command_list(const toml::value& val) {
+    macro_script script;
+    if (!val.is_array())
+        throw std::runtime_error(
+            "moused: `val` must be an array of instruction tables "
+            "{ cmd = '...', args = [...], delay = <double>? }");
+    for (const auto& instr : val.as_array()) {
+        if (!instr.is_table())
+            throw std::runtime_error(
+                "moused: every instruction in `val` must be a table "
+                "{ cmd = '...', args = [...], delay = <double>? }");
+        const auto& tbl = instr.as_table();
+        auto it = tbl.find("cmd");
+        if (it == tbl.end() || !it->second.is_string())
+            throw std::runtime_error(
+                "moused: every instruction needs `cmd = 'name'`");
+        auto cmd_type = command_type_from_string(it->second.as_string());
+        if (!cmd_type)
+            throw std::runtime_error(std::format(
+                "moused: unknown command `{}` in config file",
+                it->second.as_string()));
+        command cmd;
+        cmd.type = *cmd_type;
+        cmd.delay = 0.0;
+        if (auto d = tbl.find("delay"); d != tbl.end())
+            cmd.delay = to_double(d->second);
+        if (auto a = tbl.find("args"); a != tbl.end()) {
+            if (a->second.is_array())
+                for (const auto& e : a->second.as_array())
+                    cmd.args.push_back(parse_arg(e));
+            else
+                cmd.args.push_back(parse_arg(a->second));
+        }
+        script.push_back(std::move(cmd));
+    }
+    return script;
+}
+
+// reverse map an enum arg (button / wheel rotation) back to its config name;
+// returns std::nullopt for anything that is not a known name.
+std::optional<std::string> enum_arg_to_string(command_type type, int value) {
+    if (type == command_type::wheel) {
+#define WHEEL_ITEM(n, v) {#n, static_cast<int>(v)},
+        static const struct {
+            std::string_view name;
+            int value;
+        } wheel_names[] = {WHEEL_ROTATION_LIST(WHEEL_ITEM)};
+#undef WHEEL_ITEM
+        for (const auto& e : wheel_names)
+            if (e.value == value) return std::string(e.name);
+        return std::nullopt;
+    }
+#define BTN_ITEM(n, v) {#n, static_cast<int>(v)},
+    static const struct {
+        std::string_view name;
+        int value;
+    } btn_names[] = {MOUSE_BTN_LIST(BTN_ITEM)};
+#undef BTN_ITEM
+    for (const auto& e : btn_names)
+        if (e.value == value) return std::string(e.name);
+    return std::nullopt;
+}
+
+// serialize a macro_script back into a TOML array of instruction tables
+// (used by flash_into_config)
+toml::value script_to_toml(const macro_script& script) {
+    toml::array arr;
+    for (const auto& cmd : script) {
+        toml::table instr;
+        instr["cmd"] = std::string(command_type_to_string(cmd.type));
+        toml::array args;
+        const bool named_first =
+            cmd.type == command_type::click || cmd.type == command_type::press ||
+            cmd.type == command_type::release || cmd.type == command_type::wheel;
+        for (std::size_t i = 0; i < cmd.args.size(); ++i) {
+            if (i == 0 && named_first) {
+                if (auto s =
+                        enum_arg_to_string(cmd.type, static_cast<int>(cmd.args[0])))
+                    args.push_back(toml::value(*s));
+                else
+                    args.push_back(toml::value(cmd.args[0]));
+            } else {
+                args.push_back(toml::value(cmd.args[i]));
+            }
+        }
+        instr["args"] = std::move(args);
+        instr["delay"] = cmd.delay;
+        arr.push_back(std::move(instr));
+    }
+    return toml::value(std::move(arr));
 }
 }  // namespace
 
@@ -187,8 +329,18 @@ void flash_into_config() {
         conf[key._table_name]["keys"] = key_names;
         conf[key._table_name]["enabled"] = key.enabled;
         conf[key._table_name]["type"] =
-            key.type == script_type::in_line ? "inline" : "file";
-        conf[key._table_name]["val"] = key.val;
+            key.type == script_type::in_line ? "inline" : "replay";
+        if (key.type == script_type::replay) {
+            conf[key._table_name]["onActive"]["val"] = key.val;
+            if (key.has_interrupt)
+                conf[key._table_name]["onInterrupt"]["val"] =
+                    key.interrupt_val;
+        } else {
+            conf[key._table_name]["onActive"]["val"] = script_to_toml(key.active);
+            if (key.has_interrupt)
+                conf[key._table_name]["onInterrupt"]["val"] =
+                    script_to_toml(key.interrupt);
+        }
         conf[key._table_name]["loop"]["enabled"] = key.loop.enabled;
         conf[key._table_name]["loop"]["times"] = key.loop.times;
         conf[key._table_name]["loop"]["delay"] = key.loop.delay;
@@ -309,28 +461,112 @@ void read_from_config() {
         /*
         [key]
         enabled = <bool>
-        type = 'inline' or 'file'
-        val = """lua code(if type='inline')"
+        type = 'inline' or 'replay'
+        [key.onActive]                  // required
+        val = [...instruction tables]   // type = 'inline'
+            | "path to replay file"     // type = 'replay'
+        [key.onInterrupt]               // omittable, same shape as onActive
         [key.loop]
         enabled = <bool>
         times = <int>
         delay = <double>
         */
         _property.enabled = key_profile.at("enabled").as_boolean();
-        if (key_profile.at("type").as_string() == "file")
-            _property.type = script_type::file;
-        else
+        const std::string type_str = key_profile.at("type").as_string();
+        if (type_str == "inline")
             _property.type = script_type::in_line;
-        _property.val = trim_ws(key_profile.at("val").as_string());
+        else if (type_str == "replay")
+            _property.type = script_type::replay;
+        else
+            throw std::runtime_error(std::format(
+                "moused: unknown `type = '{}'` in section `{}` (expected "
+                "'inline' or 'replay')",
+                type_str, key));
+
+        // [key.onActive] (required)
+        if (!key_profile.contains("onActive") ||
+            !key_profile.at("onActive").is_table())
+            throw std::runtime_error(std::format(
+                "moused: section `{}` is missing the required "
+                "`[<name>.onActive]` table",
+                key));
+        const auto& on_active = key_profile.at("onActive").as_table();
+        const auto& on_active_val = on_active.at("val");
+
+        // [key.onInterrupt] (omittable)
+        auto interrupt_it = key_profile.find("onInterrupt");
+        if (interrupt_it != key_profile.end() && !interrupt_it->second.is_table())
+            throw std::runtime_error(std::format(
+                "moused: `[<name>.onInterrupt]` in section `{}` must be a "
+                "table",
+                key));
+
+        if (_property.type == script_type::in_line) {
+            _property.active = parse_command_list(on_active_val);
+            if (interrupt_it != key_profile.end()) {
+                _property.has_interrupt = true;
+                _property.interrupt =
+                    parse_command_list(interrupt_it->second.as_table().at("val"));
+            } else {
+                // [key.onInterrupt] omitted -> fall back to onActive
+                _property.interrupt = _property.active;
+            }
+        } else {
+            // replay: reuse the old `type = 'file'` path handling — resolve
+            // the (relative) replay path against the config dir and keep the
+            // resolved path in `val`; actual replay execution is future work
+            if (!on_active_val.is_string())
+                throw std::runtime_error(std::format(
+                    "moused: replay section `{}` needs `val = \"path to "
+                    "replay file\"`",
+                    key));
+            _property.val =
+                resolve_config_path(trim_ws(on_active_val.as_string()));
+            if (interrupt_it != key_profile.end()) {
+                _property.has_interrupt = true;
+                const auto& iv = interrupt_it->second.as_table().at("val");
+                if (iv.is_string())
+                    _property.interrupt_val =
+                        resolve_config_path(trim_ws(iv.as_string()));
+            } else {
+                // [key.onInterrupt] omitted -> fall back to onActive
+                _property.interrupt_val = _property.val;
+            }
+        }
 
         // [key.loop] sub table
         const auto& loop = key_profile.at("loop").as_table();
         _loopment.enabled = loop.at("enabled").as_boolean();
         _loopment.times =
             static_cast<unsigned long long>(loop.at("times").as_integer());
-        _loopment.delay = loop.at("delay").as_floating();
+        _loopment.delay = to_double(loop.at("delay"));
 
         _property.loop = _loopment;
         keys_properties.push_back(_property);
+    }
+}
+
+// Register every enabled hotkey's macro. Inline macros were already parsed
+// into `key_property::active` by read_from_config(); here we cache them for
+// the runtime. Replay macros are planned content — only their file path is
+// parsed (key_property::val) — so they are skipped for now.
+// The registered set is cleared first so it always mirrors `enabled`: this
+// matters when the UI re-calls warmup after toggling a macro's enabled state.
+void warmup_macros() {
+    macro::clear_macros();
+    for (const auto& prop : keys_properties) {
+        if (!prop.enabled) continue;
+        if (prop.type == script_type::replay) {
+            log_msg("moused: replay macro for key %d is not supported yet "
+                    "(replay file `%s`)\n",
+                    static_cast<int>(prop.keys.front()), prop.val.c_str());
+            continue;
+        }
+        try {
+            macro::register_macro(prop.keys, prop.active, prop.loop);
+        } catch (const std::exception& e) {
+            log_msg("moused: failed to register macro for key %d: %s\n",
+                    static_cast<int>(prop.keys.front()), e.what());
+        }
     }
 }

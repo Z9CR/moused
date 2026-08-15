@@ -1,20 +1,24 @@
 ## a template hotkey-properties should like that
 ```toml
 [key]
-keys = ["L"]                    # combo keys (array; >=1). Names come from
-                                # KEYS_LIST, e.g. "L", "F1", "LEFT_CONTROL",
-                                # "LEFT_SHIFT", "LEFT_ALT". When omitted,
-                                # the section name is used as a single key
+keys = ["L"]
 enabled = <bool>
-type = 'inline' or 'file'
-val = """lua code(if type='inline')""" or 'file path(if type='file')'
-      file paths are resolved relative to this config's directory, so
-      `val = "test.lua"` means `<config dir>/test.lua`.
-      Windows absolute paths: use forward slashes
-      (`val = "C:/Users/.../test.lua"`) or a single-quoted literal string
-      (`val = 'C:\Users\...\test.lua'`). NEVER use a double-quoted
-      backslash path (`val = "C:\Users\..."`) — in TOML `\U`, `\9`, `\A`...
-      are invalid escapes and abort parsing.
+type = 'inline' or 'replay'
+[key.onActive]
+val = [[cmd_arr1], [cmd_arr2]...] or """path to replay file(if `replay`)"""
+# file paths are resolved relative to this config's directory, so
+# `val = "./rightTransfer.replay"` means `<config dir>/rightTransfer.replay`.
+# Windows absolute paths: use forward slashes
+# (`val = "C:/Users/.../rightTransfer.replay"`) or a single-quoted literal string
+# (`val = 'C:\Users\...\rightTransfer.replay'`). NEVER use a double-quoted
+# backslash path (`val = "C:\Users\..."`) — in TOML `\U`, `\9`, `\A`...
+# are invalid escapes and abort parsing.
+[key.onInterrupt]
+val = [[cmd_arr1], [cmd_arr2]...] or """path to replay file(if `replay`)"""
+# why onInterrupt: some macro such as `{cmd = 'press', args = {'LMB'}, delay = 0}`, 
+# when we want to interrupt it, program  will run 
+# `{cmd = 'press', args = {'LMB'}, delay = 0}` instead of `{cmd = 'release', args = {'LMB'}, delay = 0}`
+# omitting [key.onInterrupt] makes it fall back to [key.onActive].val
 [key.loop]
 enabled = <bool>
 times = <int>
@@ -26,57 +30,71 @@ delay = <double>
 ## example combo 
 (table name is just an identifier, must be unique):
 ```toml
-[CTRL_L]
-enabled = true
-keys = ["LEFT_CONTROL", "L"]
-type = 'inline'
-val = """..."""
-[CTRL_L.loop]
-enabled = true
-times = 0
-delay = 0.0
+[CTRL_L]                      # required
+enabled = true                # required
+keys = ["LEFT_CONTROL", "L"]  # required
+type = 'inline'               # required
+[key.onActive]                # required
+val = """..."""               # required
+[key.onInterrupt]             # omittable
+val = """..."""               # omittable
+                              # when omitted, it falls back to [key.onActive].val
+[CTRL_L.loop]                 # required
+enabled = true                # required
+times = 0                     # required
+delay = 0.0                   # required
 ```
 
 while a longer combo is held, its shorter overlapping sub-key combos are
 suppressed (e.g. holding Ctrl+L keeps plain L from firing).
 
 
-the code (whether in file or inline) must contain a function called
-`run()` that RETURNS AN ARRAY of instruction-tables:
-```lua
-  return {
-      {cmd = <cmd>, args = {<double>, <double>, ...}, delay = <double>},
-      ...
-  }
+the code must be a array of folowing array
+```toml
+{cmd = <cmd>, args = [<double>, <double>, ...], delay = <double>},
+```
+EG:
+```toml
+[
+  {cmd = 'wheel', args = ['WU', 10], delay = 0},
+  {cmd = 'wheel', args = ['WD', 11], delay = 0.1}
+]
 ```
 
+
 ### `args` 
-are all Lua numbers (doubles); the C++ side casts them to
-  whatever type each adapter function needs.
-  Per-command argument lists:
-      translate:  {angle(deg), distant(px), time_ms?}
-      move_to:    {x(px), y(px), time_ms?}
-      click:      {mouse_btn.*}
-      press:      {mouse_btn.*}
-      release:    {mouse_btn.*}
-      wheel:      {wheel_rotation.*, scale}
+are all command param (doubles); the C++ side casts them to
+whatever type each adapter function needs.
+command and argument lists:
+| cmd | param |
+| - | - |
+| `'translate':`| `[<angle>, <distance>, <time_ms?>]`       |
+| `'move_to':`  | `[<x(px)>, <y(px)>, <time_ms?>]`          |
+| `'click':`    | `['LMB' \| 'RMB' \| 'MMB' \| 'XB1' \| 'XB2']` |
+| `'press':`    | `['LMB' \| 'RMB' \| 'MMB' \| 'XB1' \| 'XB2']` |
+| `'release':`  | `['LMB' \| 'RMB' \| 'MMB' \| 'XB1' \| 'XB2']` |
+| `'wheel':`    | `['WU' \| 'WD', <scale>]`                  |
+if angle = 0,
+it will point to x+ direction
+which is the right direction in physical world
+if angle > 0,
+it will point to the direction CW rotate `angle` degs from x+
+if angle < 0,
+it will point to the direction CCW rotate `angle` degs from x+
+
+
+
 ### `delay` 
 is OPTIONAL (measured in ms): the time to wait BEFORE this
   instruction. When omitted, it falls back to 0.0.
   The examples below always write it out explicitly — that is the
   canonical template form.
 
-## tip
-  mouse_btn.LMB, mouse_btn.RMB, mouse_btn.MMB, mouse_btn.XB1, mouse_btn.XB2,
-  wheel_rotation.WU, wheel_rotation.WD
-are declared beforehand for mouse commands
-
 ## prop means
 `smooth_frametime_ms = 4`
 when smooth moving,
 prog will slice the path to dest into pieces,
 and the value below is how long will stay in per pieces
-unit: ms
 
 `max_window_width`
 `max_window_height`

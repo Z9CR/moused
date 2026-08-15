@@ -6,105 +6,17 @@
 #include <algorithm>
 #include <chrono>
 #include <config.hpp>
-#include <filesystem>
-#include <fstream>
-#include <iterator>
 #include <macro.hpp>
 #include <macro_manager.hpp>
 #include <polkit_utils.hpp>
-#include <script_binding.hpp>
 #include <stdexcept>
 #include <thread>
 #include <toml.hpp>
 #include <ui.hpp>
 #include <utils.hpp>
-extern "C" {
-#include "lauxlib.h"
-#include "lua.h"
-#include "lualib.h"
-}
-#include "LuaBridge/LuaBridge.h"
 #pragma endregion
 
 namespace {
-// Pre-parse every enabled hotkey's Lua script into a cached macro_script.
-// Scripts are executed ONCE at startup; at runtime only the cached
-// command arrays run (no Lua).
-void warmup_macros() {
-    lua_State* L = luaL_newstate();
-    if (!L) {
-        log_msg("moused: failed to create lua state\n");
-        return;
-    }
-    luaL_openlibs(L);
-    register_script_enums(L);
-
-    for (const auto& prop : keys_properties) {
-        if (!prop.enabled) continue;
-
-        std::string script;
-        if (prop.type == script_type::in_line) {
-            script = prop.val;
-        } else if (prop.type == script_type::file) {
-            // resolve relative script paths against the config dir, so
-            // `val = "test.lua"` means `<config dir>/test.lua` regardless of
-            // the process working directory
-            std::filesystem::path scriptPath(prop.val);
-            if (scriptPath.is_relative())
-                scriptPath =
-                    std::filesystem::path(platform_cfg_dir) / scriptPath;
-            std::ifstream f(scriptPath);
-            if (!f) {
-                log_msg(
-                    "moused: cannot open script file `%s` (resolved to "
-                    "`%s`)\n",
-                    prop.val.c_str(), scriptPath.string().c_str());
-                continue;
-            }
-            script.assign(std::istreambuf_iterator<char>(f),
-                          std::istreambuf_iterator<char>());
-        } else {
-            log_msg("moused: unknown script type for key %d\n",
-                    static_cast<int>(prop.keys.front()));
-            continue;
-        }
-
-        if (luaL_loadbuffer(L, script.data(), script.size(), "hotkey") !=
-                LUA_OK ||
-            lua_pcall(L, 0, 0, 0) != LUA_OK) {
-            log_msg("moused: error loading script for key %d: %s\n",
-                    static_cast<int>(prop.keys.front()), lua_tostring(L, -1));
-            lua_pop(L, 1);
-            continue;
-        }
-
-        lua_getglobal(L, "run");
-        if (!lua_isfunction(L, -1)) {
-            log_msg("moused: script for key %d has no `run()`\n",
-                    static_cast<int>(prop.keys.front()));
-            lua_pop(L, 1);
-            continue;
-        }
-        if (lua_pcall(L, 0, 1, 0) != LUA_OK) {
-            log_msg("moused: run() failed for key %d: %s\n",
-                    static_cast<int>(prop.keys.front()), lua_tostring(L, -1));
-            lua_pop(L, 1);
-            continue;
-        }
-
-        try {
-            macro_script ms = parse_lua_result(L);
-            macro::register_macro(prop.keys, ms, prop.loop);
-        } catch (const std::exception& e) {
-            log_msg("moused: parse failed for key %d: %s\n",
-                    static_cast<int>(prop.keys.front()), e.what());
-        }
-        lua_settop(L, 0);
-    }
-
-    lua_close(L);
-}
-
 // Background listener: polls the keyboard and toggles macros on the
 // rising edge of a registered hotkey press.
 std::jthread g_listener;
@@ -148,7 +60,7 @@ bool moused::OnInit() {
         touch_config_file(platform_cfg_dir, config_name);
         read_from_config();
 
-        // pre-parse every enabled hotkey's script into cached macro_scripts
+        // register every enabled macro into the runtime macro manager
         warmup_macros();
 
         // Background listener: polls each configured key combo and toggles its

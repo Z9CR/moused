@@ -9,9 +9,6 @@
 #include <algorithm>
 #include <config.hpp>
 #include <filesystem>
-#include <fstream>
-
-#include <sstream>
 #include <ui.hpp>
 #include <utils.hpp>
 #include <mousec_png.h>  // generated at build time from assets/mousec.png
@@ -119,22 +116,12 @@ class editorDialog : public wxDialog {
         constexpr int codeViewerId = 0x191 + 9 * 810;
         wxStaticText* codeViewer;
         if (key.type == script_type::in_line) {
-            codeViewer = new wxStaticText(this, codeViewerId, key.val);
+            // show the parsed instructions, one per line
+            codeViewer = new wxStaticText(this, codeViewerId,
+                                          format_macro_script(key.active));
         } else {
-            // type = file
-            std::filesystem::path cfg(key.val);
-            if (cfg.is_absolute()) {
-                std::ifstream f(key.val);
-                std::stringstream buffer{};
-                buffer << f.rdbuf();
-                codeViewer = new wxStaticText(this, codeViewerId, buffer.str());
-            } else if (cfg.is_relative()) {
-                cfg = std::filesystem::path(platform_cfg_dir) / cfg;
-                std::ifstream f(cfg.string());
-                std::stringstream buffer{};
-                buffer << f.rdbuf();
-                codeViewer = new wxStaticText(this, codeViewerId, buffer.str());
-            }
+            // replay: only the (resolved) file path is known so far
+            codeViewer = new wxStaticText(this, codeViewerId, key.val);
         }
 #pragma endregion
 #pragma region openCfgFileBtn
@@ -149,17 +136,10 @@ class editorDialog : public wxDialog {
                 // open toml cfg file
                 opened = wxLaunchDefaultApplication(cfg.string());
             } else {
-                // type = file
+                // replay: `val` was already resolved to an absolute path
                 std::filesystem::path cfg(key.val);
-                if (cfg.is_absolute())
-                    // open abs path cfg
+                if (std::filesystem::exists(cfg))
                     opened = wxLaunchDefaultApplication(cfg.string());
-                else if (cfg.is_relative()) {
-                    cfg = std::filesystem::path(platform_cfg_dir) / cfg;
-                    if (std::filesystem::exists(cfg))
-                        // open relative path cfg
-                        opened = wxLaunchDefaultApplication(cfg.string());
-                }
             }
             if (!opened)
                 wxMessageBox(
@@ -258,6 +238,9 @@ mainWindow::mainWindow(const wxString& title)
                         macroViewer->SetCellValue(
                             row, col, keys_properties[row].enabled ? "Y" : "N");
                         flash_into_config();
+                        // re-sync the runtime macros so an enable/disable
+                        // toggle takes effect without restarting the app
+                        warmup_macros();
                     } catch (const std::exception& e) {
                         // when err, undo switch
                         keys_properties[row].enabled =
@@ -282,7 +265,7 @@ mainWindow::mainWindow(const wxString& title)
     });
 #pragma region macroViewerLayout
     // auto-size every column & row so each cell fully shows its content
-    // (multi-line Lua code makes its row grow taller as needed)
+    // (multi-line macro text makes its row grow taller as needed)
     macroViewer->AutoSize();
     // lay out the grid with a sizer so the frame can size itself to fit
     wxSizer* sizer = new wxBoxSizer(wxVERTICAL);

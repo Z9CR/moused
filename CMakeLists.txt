@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.31)
-project(moused CXX C)
+project(moused CXX)
 set(CMAKE_CXX_STANDARD 26)
 # prog params
 set(INCLUDES_DIR include)
@@ -12,7 +12,7 @@ foreach(dir ${INCLUDES_DIR})
 endforeach()
 
 # platform-specific sources
-set(COMMON_SOURCES src/main.cpp src/config.cpp src/ui.cpp src/utils.cpp src/script_binding.cpp src/macro.cpp src/macro_manager.cpp)
+set(COMMON_SOURCES src/main.cpp src/config.cpp src/ui.cpp src/utils.cpp src/macro.cpp src/macro_manager.cpp)
 if(WIN32)
     set(PLATFORM_SOURCES src/win.cpp)
 elseif(APPLE)
@@ -52,33 +52,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(toml11)
 
-# lua
-FetchContent_Declare(
-    lua
-    GIT_REPOSITORY "https://github.com/lua/lua.git"
-    GIT_TAG "v5.4.4"
-)
-# lua has no CMakeLists.txt, so we must populate manually.
-# FetchContent_Populate is deprecated in CMake >= 4.0 (CMP0169),
-# but the replacement MakeAvailable requires a CMakeLists.txt.
-cmake_policy(SET CMP0169 OLD)
-FetchContent_GetProperties(lua)
-if(NOT lua_POPULATED)
-    FetchContent_Populate(lua)
-    file(GLOB LUA_SOURCES ${lua_SOURCE_DIR}/*.c)
-    list(REMOVE_ITEM LUA_SOURCES ${lua_SOURCE_DIR}/lua.c ${lua_SOURCE_DIR}/ltests.c ${lua_SOURCE_DIR}/onelua.c)
-    add_library(lua STATIC ${LUA_SOURCES})
-    target_include_directories(lua PUBLIC ${lua_SOURCE_DIR})
-endif()
-
-# luabridge (header-only, has its own CMakeLists.txt)
-FetchContent_Declare(
-    LuaBridge
-    GIT_REPOSITORY "https://github.com/vinniefalco/LuaBridge.git"
-    GIT_TAG "2.10"
-)
-FetchContent_MakeAvailable(LuaBridge)
-
 # wxWidget
 FetchContent_Declare(
     wx
@@ -117,8 +90,6 @@ endif()
 
 target_include_directories(moused PRIVATE ${INCLUDES_DIR} ${GENERATED_DIR})
 target_link_libraries(moused PRIVATE toml11::toml11)
-target_link_libraries(moused PRIVATE lua)
-target_link_libraries(moused PRIVATE LuaBridge)
 target_link_libraries(moused PRIVATE wx::core wx::base)
 
 if(APPLE)

@@ -3,12 +3,13 @@
 // thus, just temporally store them in .c
 
 #include <adapter.hpp>
+#include <filesystem>
+#include <macro.hpp>
 #include <string>
 #include <vector>
-#include <filesystem>
 
-// the type of a hotkey's bound script
-enum class script_type { in_line = 0, file = 1 };
+// the type of a hotkey's bound macro
+enum class script_type { in_line = 0, replay = 1 };
 
 struct loopment {
     bool enabled;
@@ -25,7 +26,22 @@ struct key_property {
     std::vector<keyboard::keys> keys;
     bool enabled;
     script_type type;
+    // `replay` type: resolved path to the replay file from
+    // [key.onActive].val (relative paths are resolved against the config
+    // dir). Empty for `in_line` type.
     std::string val;
+    // `in_line` type: instructions parsed from [key.onActive].val.
+    macro_script active;
+    // `in_line` type: instructions parsed from the optional
+    // [key.onInterrupt].val. When the section is omitted it falls back to
+    // `active`.
+    macro_script interrupt;
+    // `replay` type: resolved path from the optional [key.onInterrupt].val;
+    // falls back to `val` when the section is omitted.
+    std::string interrupt_val;
+    // true only when [key.onInterrupt] was explicitly present in the config
+    // (flash uses this so it never writes the fallback out to the file).
+    bool has_interrupt = false;
     loopment loop;
     // `_table_name` is for flash only
     std::string _table_name;
@@ -71,3 +87,8 @@ void touch_config_file(const std::string& parent_path, const std::string& name);
 
 // read content from config file and write in `keys_properties`
 void read_from_config();
+
+// (re)register every enabled macro into the runtime macro manager. Called at
+// startup and re-called from the UI after toggling a macro's enabled state,
+// so an enable toggle takes effect at runtime without a restart.
+void warmup_macros();
