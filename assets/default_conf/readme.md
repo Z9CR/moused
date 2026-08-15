@@ -99,3 +99,7 @@ and the value below is how long will stay in per pieces
 `max_window_width`
 `max_window_height`
 window size upper bound; 0 = no limit
+
+`silent_launch`
+when true, prog starts without showing the main window — only the tray icon
+appears (open the window again from the tray menu)

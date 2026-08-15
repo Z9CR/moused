@@ -69,6 +69,10 @@ extern const std::string config_name;
 // parsed from [global].smooth_frametime_ms,thus mutable at runtime
 extern int smoothmv_frametime;
 
+// parsed from [global].silent_launch: when true the app starts to the tray
+// without showing the main window
+extern bool silent_launch;
+
 extern std::vector<key_property> keys_properties;
 
 // utils

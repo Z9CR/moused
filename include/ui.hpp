@@ -13,6 +13,11 @@ class mainWindow : public wxFrame {
     // toolbar Quit button and the tray "quit" menu item.
     void requestQuit();
 
+    // whether the tray icon is active (false when the embedded PNG failed to
+    // load) — used at startup so a `silent_launch` app still shows the
+    // window instead of becoming invisible when there is no tray.
+    bool hasTray() const { return tray != nullptr; }
+
     // The tray must be destroyed here instead of in requestQuit(): when the
     // quit command comes from the tray menu, the tray's internal hidden
     // window (wxTaskBarIconWindow) is still processing the event, and

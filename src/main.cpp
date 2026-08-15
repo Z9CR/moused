@@ -125,7 +125,10 @@ bool moused::OnInit() {
 
     // run ui
     mainWindow* mw = new mainWindow("moused");
-    mw->Show(true);
+    // `silent_launch = true` starts the app into the tray only; fall back to
+    // showing the window when the tray icon could not be created, otherwise
+    // the app would be invisible with no way to quit.
+    if (!silent_launch || !mw->hasTray()) mw->Show(true);
     return true;
 }
 

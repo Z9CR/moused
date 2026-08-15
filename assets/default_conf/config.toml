@@ -2,6 +2,7 @@
 smooth_frametime_ms = 4
 max_window_width = 800
 max_window_height = 600
+silent_launch = true
 
 [L]
 keys = ["LEFT_CONTROL", "L"]

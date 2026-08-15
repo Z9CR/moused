@@ -176,6 +176,10 @@ const std::string mainwindow_title = "moused";
 int mainwindow_max_width = 0;
 int mainwindow_max_height = 0;
 
+// parsed from [global].silent_launch; true = start to tray without showing
+// the main window
+bool silent_launch = true;
+
 // global config directory path, static lifetime
 std::string platform_cfg_dir;
 
@@ -304,6 +308,7 @@ void flash_into_config() {
     conf["global"]["smooth_frametime_ms"] = smoothmv_frametime;
     conf["global"]["max_window_width"] = mainwindow_max_width;
     conf["global"]["max_window_height"] = mainwindow_max_height;
+    conf["global"]["silent_launch"] = silent_launch;
 
     // gen keyboard::keys -> string name map (mirrors read_from_config)
     // `keys = [...]` in config stores *names* (["LEFT_CONTROL","L"]), not enum
@@ -389,6 +394,7 @@ void read_from_config() {
     // reset to defaults before re-parsing, so repeated calls don't accumulate
     // fallbacks
     smoothmv_frametime = 4;
+    silent_launch = false;
     keys_properties.clear();
     if (_props.is_empty()) return;
     const auto& props = _props.as_table();
@@ -414,6 +420,7 @@ void read_from_config() {
                 static_cast<int>(toml::find_or(val, "max_window_width", 0));
             mainwindow_max_height =
                 static_cast<int>(toml::find_or(val, "max_window_height", 0));
+            silent_launch = toml::find_or(val, "silent_launch", false);
             continue;
         }
         // every profile of a key should be a table
