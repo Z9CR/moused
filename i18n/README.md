@@ -14,11 +14,14 @@ executable.
    ```
    **ps** install `xgettext` for windows: https://github.com/mlocati/gettext-iconv-windows/releases
 
-2. **Translate**: copy `moused.pot` (or an existing `.po`) to `i18n/<lang>.po`
-   (e.g. `zh_CN.po`) and fill in the `msgstr` lines. Keep the file UTF-8.
-
+2. **Translate**: 
+   1. copy `moused.pot` (or an existing `.po`) to `i18n/<lang>.po`
+      (e.g. `zh_CN.po`) and fill in the `msgstr` lines. Keep the file UTF-8.
+   2. translate [polkit policy](../policy/com.moused.program.policy)
    Note: wxWidgets uses POSIX locale tags — `zh_CN`, `en_US`, `de_DE`, ... —
    which are exactly the `NAME_WE` of each `i18n/*.po` file.
+
+
 
 3. **Build**: CMake detects `msgfmt` on `PATH`, compiles every
    `i18n/<lang>.po` into `locale/<lang>/LC_MESSAGES/moused.mo` and copies it
