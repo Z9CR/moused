@@ -120,8 +120,8 @@ bool platform_uinput_setup() {
     snprintf(usetup.name, UINPUT_MAX_NAME_SIZE, "moused");
     usetup.id.bustype = BUS_USB;  // pretend it is a USB dev
     usetup.id.vendor = 0x1145;    // just.. a
-    usetup.id.product = 0x1919;   // random num :)
-    usetup.id.version = 0xF0C1c;  // F?CK
+    usetup.id.product = 0x1919 + 810;   // random num :)
+    usetup.id.version = 0x114 + 514;
     // notify `ioctl` to setup our fake mouse which is named `moused`
     ioctl(uinput_fd, UI_DEV_SETUP, &usetup);
 #pragma endregion

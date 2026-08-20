@@ -121,6 +121,20 @@ endif()
 set(I18N_DIR ${CMAKE_CURRENT_SOURCE_DIR}/i18n)
 find_program(MSGFMT_EXECUTABLE NAMES msgfmt msgfmt.exe)
 if(MSGFMT_EXECUTABLE)
+    # Where the executable actually lands: defaults to the build dir, unless
+    # RUNTIME_OUTPUT_DIRECTORY redirects it or (on macOS) it is wrapped in an
+    # .app bundle. Used below to decide whether "deploy next to the
+    # executable" actually moves the .mo somewhere else than where msgfmt
+    # wrote it (in the default layout they are the same directory, and the
+    # copy would be a pointless self-copy).
+    get_target_property(MOUSED_RUNTIME_DIR moused RUNTIME_OUTPUT_DIRECTORY)
+    if(NOT MOUSED_RUNTIME_DIR)
+        set(MOUSED_RUNTIME_DIR ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
+    if(APPLE)
+        string(APPEND MOUSED_RUNTIME_DIR "/${CMAKE_PROJECT_NAME}.app/Contents/MacOS")
+    endif()
+
     file(GLOB I18N_PO_FILES ${I18N_DIR}/*.po)
     set(I18N_MO_FILES "")
     foreach(PO_FILE ${I18N_PO_FILES})
@@ -135,14 +149,25 @@ if(MSGFMT_EXECUTABLE)
             COMMENT "msgfmt: ${PO_FILE}"
         )
         list(APPEND I18N_MO_FILES ${MO_FILE})
-        # deploy next to the built executable
-        add_custom_command(
-            TARGET moused POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${MO_FILE}
-                    $<TARGET_FILE_DIR:moused>/locale/${LANG}/LC_MESSAGES/moused.mo
-        )
+        # Deploy next to the built executable, but only when that location
+        # differs from where the catalog was generated (default layout: the
+        # executable and build/locale/... both live in the build dir, so the
+        # copy would be a self-copy).
+        if(NOT "${MOUSED_RUNTIME_DIR}/locale/${LANG}/LC_MESSAGES" STREQUAL
+                "${CMAKE_CURRENT_BINARY_DIR}/locale/${LANG}/LC_MESSAGES")
+            add_custom_command(
+                TARGET moused POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${MO_FILE}
+                        $<TARGET_FILE_DIR:moused>/locale/${LANG}/LC_MESSAGES/moused.mo
+            )
+        endif()
     endforeach()
     add_custom_target(i18n_mo ALL DEPENDS ${I18N_MO_FILES})
+    # Build the catalogs *before* moused links: the POST_BUILD deploy above
+    # (and any consumer of the catalogs) requires the .mo files to already
+    # exist. Without this, `make moused` or a parallel `make -j` could run
+    # the deploy before msgfmt has produced moused.mo.
+    add_dependencies(moused i18n_mo)
 else()
     message(STATUS "msgfmt not found - i18n catalogs will not be built")
 endif()
