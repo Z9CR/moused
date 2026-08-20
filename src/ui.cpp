@@ -11,7 +11,7 @@
 #include <filesystem>
 #include <ui.hpp>
 #include <utils.hpp>
-#include <mousec_png.h>  // generated at build time from assets/mousec.png
+#include <mousec_png.hpp>  // generated at build time from assets/mousec.png
 
 #define KEY_ITEM(v, k) {#v, k},
 const static struct {

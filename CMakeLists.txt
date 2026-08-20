@@ -35,13 +35,28 @@ file(READ ${CMAKE_CURRENT_SOURCE_DIR}/assets/mousec.png PNG_HEX HEX)
 # "89504E470D0A1A0A..." -> "0x89, 0x50, 0x4E, ..."
 string(REGEX REPLACE "(..)" "0x\\1, " PNG_BYTES "${PNG_HEX}")
 string(REGEX REPLACE ", $" "" PNG_BYTES "${PNG_BYTES}")
-set(PNG_HEADER ${GENERATED_DIR}/mousec_png.h)
+set(PNG_HEADER ${GENERATED_DIR}/mousec_png.hpp)
 file(WRITE ${PNG_HEADER}
 "// Auto-generated from assets/mousec.png (do not edit).\n"
 "#pragma once\n"
 "#include <cstddef>\n"
-"static const unsigned char mousec_png_data[] = {\n    ${PNG_BYTES}\n};\n"
+"static const unsigned char mousec_png_data[] = {\n    ${PNG_BYTES} \n};\n"
 "static const std::size_t mousec_png_size = sizeof(mousec_png_data);\n"
+)
+# Turn assets/default_conf/config.toml into a C++ raw-string header so the
+# resulting executable is self-contained (no assets dir needed at runtime).
+# A raw string literal embeds the TOML text verbatim (quotes, backslashes and
+# newlines all stay literal). Do NOT use the HEX trick from the PNG above:
+# config.cpp writes this string straight into the config file, so it must
+# contain the TOML source, not a hex dump of it.
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/assets/default_conf/config.toml DEFAULT_CONF_TEXT)
+set(DEFAULT_CONF_HEADER ${GENERATED_DIR}/default_conf.hpp)
+file(WRITE ${DEFAULT_CONF_HEADER}
+"// Auto-generated from assets/default_conf/config.toml (do not edit).\n"
+"#pragma once\n"
+"#include <string>\n"
+"static const std::string default_conf_data = R\"MOUSED_TOML(${DEFAULT_CONF_TEXT}"
+")MOUSED_TOML\";\n"
 )
 
 # toml11

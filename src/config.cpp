@@ -13,6 +13,7 @@
 #include <toml.hpp>
 #include <utils.hpp>
 #include <vector>
+#include <default_conf.hpp>
 
 namespace {
 // strip leading/trailing whitespace (space, \t, \r, \n, \v, \f). TOML
@@ -380,11 +381,12 @@ void touch_config_file(const std::string& parent_path,
     if (std::filesystem::exists(cfg)) {
         return;
     }
-
+    // flash defalut config file into 
     std::ofstream out(cfg);
     if (!out) {
         throw std::runtime_error("failed to create config file");
     }
+    out << default_conf_data;
 }
 
 void read_from_config() {
