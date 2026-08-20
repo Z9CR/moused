@@ -158,12 +158,20 @@ void polkit_drop_privileges() {
         return;
     }
 
-    // Drop effective uid (keep permitted set in case we need to regain).
-    // seteuid changes only the effective uid so the process still has
-    // CAP_SETUID in its permitted set and could regain root if needed.
-    if (seteuid(orig_uid) != 0) {
+    // Drop ALL uid credentials (real, effective and saved) back to the
+    // original user. This must be setresuid(), not seteuid(): the session
+    // D-Bus daemon authenticates connecting clients by their REAL uid
+    // (SO_PEERCRED), so a process that stays real-uid-root after seteuid()
+    // is rejected by the user's session bus. gdk-pixbuf needs a
+    // session-bus connection to run the sandboxed glycin image loaders,
+    // and when that connection fails every themed icon load aborts GTK
+    // (gtkiconhelper "assertion failed (error == NULL)" while loading e.g.
+    // image-missing.svg). Nothing in moused needs root after this point:
+    // /dev/uinput and the keyboard fds were opened before this call and
+    // remain usable, and nothing re-elevates later.
+    if (setresuid(orig_uid, orig_uid, orig_uid) != 0) {
         throw std::system_error(errno, std::generic_category(),
-                                "seteuid failed");
+                                "setresuid failed");
     }
 }
 #endif
