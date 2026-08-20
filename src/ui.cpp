@@ -303,7 +303,13 @@ mainWindow::mainWindow(const wxString& title)
         if (img.LoadFile(mis, wxBITMAP_TYPE_PNG))
             ico.CopyFromBitmap(wxBitmap(img));
     }
-    if (!ico.IsOk() || !this->tray->SetIcon(ico)) {
+    if (!wxTaskBarIconBase::IsAvailable()) {
+        // when no system tray on this display, wxGTK3's SetIcon() always
+        // returns true even when the icon can never be displayed, so without
+        // this check a `silent_launch` app would start fully invisible.
+        delete this->tray;
+        this->tray = nullptr;
+    } else if (!ico.IsOk() || !this->tray->SetIcon(ico)) {
         wxLogError("Moused: cannot create tray icon (embedded PNG invalid)");
         // a broken tray degrades to a normal top-level app: closing the
         // window then really exits (handled in onClose()).
