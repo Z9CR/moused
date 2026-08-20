@@ -74,6 +74,7 @@ command and argument lists:
 | `'press':`    | `['LMB' \| 'RMB' \| 'MMB' \| 'XB1' \| 'XB2']` |
 | `'release':`  | `['LMB' \| 'RMB' \| 'MMB' \| 'XB1' \| 'XB2']` |
 | `'wheel':`    | `['WU' \| 'WD', <scale>]`                  |
+
 if angle = 0,
 it will point to x+ direction
 which is the right direction in physical world
