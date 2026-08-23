@@ -236,6 +236,9 @@ mainWindow::mainWindow(const wxString& title)
         langChoice->Append(wxString::FromUTF8(l.label));
     const int cur = langCfgToIndex(ui_language);
     langChoice->SetSelection(cur < 0 ? 0 : cur);
+    const int choiceH = langChoice->GetBestSize().y + langChoice->FromDIP(2);
+    // fix size incase height error of toolbar
+    langChoice->SetSize(langChoice->GetBestSize().x, choiceH);
     toolBar->AddControl(langChoice, _("toolbar.language"));
     langChoice->Bind(wxEVT_CHOICE, &mainWindow::onLanguageSelected, this);
 #pragma endregion
