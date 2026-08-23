@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <config.hpp>
 #include <filesystem>
+#include <iterator>
 #include <ui.hpp>
 #include <utils.hpp>
 #include <mousec_png.hpp>  // generated at build time from assets/mousec.png
@@ -41,9 +42,45 @@ std::string comboNameOf(const key_property& prop) {
 constexpr int menuQuitBtnId = 0x6 + 7;
 constexpr int menuShowMWBtnId = 0x6 + 7 + 114;
 
-class MyTaskBarIcon : public wxTaskBarIcon {
+constexpr int toolBarItemOpenCfgID = 0x6767;
+// MSW sign-extends toolbar WM_COMMAND ids to signed short, so ids must be
+// < 0x8000 (classic hex words like 0xcafe don't fit; 0x5eed does)
+constexpr int toolBarItemQuitId = 011 + 45 + 14;
+constexpr int toolBarItemLanguageId = 0x1 * 919 + 8 - 10;
+
+// language switch dropdown entries; index == wxChoice selection. `language`
+// is the wxLanguage passed to wxLocale::Init(), `cfg` is the value persisted
+// into [global].language.
+static const struct {
+    const char* label;  // UTF-8, shown verbatim in its own language
+    int language;
+    const char* cfg;
+} langTable[] = {
+    {"System", wxLANGUAGE_DEFAULT, "system"},
+    {"English", wxLANGUAGE_ENGLISH_US, "en_US"},
+    // the byte string below is "简体中文" encoded as UTF-8, written as hex
+    // escapes so this source file stays encoding-agnostic (no /utf-8 flag
+    // needed on MSVC)
+    {"\xe7\xae\x80\xe4\xbd\x93\xe4\xb8\xad\xe6\x96\x87",
+     wxLANGUAGE_CHINESE_SIMPLIFIED, "zh_CN"},
+};
+
+// index of the langTable entry matching a [global].language value, or -1
+static int langCfgToIndex(const std::string& cfg) {
+    for (std::size_t i = 0; i < std::size(langTable); ++i)
+        if (cfg == langTable[i].cfg) return static_cast<int>(i);
+    return -1;
+}
+
+// wxLanguage for a [global].language value (falls back to wxLANGUAGE_DEFAULT)
+static int langCfgToWxLanguage(const std::string& cfg) {
+    const int idx = langCfgToIndex(cfg);
+    return idx < 0 ? wxLANGUAGE_DEFAULT : langTable[idx].language;
+}
+
+class taskBarIcon : public wxTaskBarIcon {
    public:
-    explicit MyTaskBarIcon(mainWindow* parent) : m_parent(parent) {}
+    explicit taskBarIcon(mainWindow* parent) : m_parent(parent) {}
 
     // MSW requires the popup menu to be re-created on every show, so build a
     // fresh menu here each time instead of caching one.
@@ -77,10 +114,10 @@ class MyTaskBarIcon : public wxTaskBarIcon {
 };
 
 // clang-format off
-wxBEGIN_EVENT_TABLE(MyTaskBarIcon, wxTaskBarIcon)
-    EVT_MENU(menuShowMWBtnId, MyTaskBarIcon::OnMenuEvent)
-    EVT_MENU(menuQuitBtnId, MyTaskBarIcon::OnMenuEvent)
-    EVT_TASKBAR_LEFT_DCLICK(MyTaskBarIcon::OnLeftDClick)
+wxBEGIN_EVENT_TABLE(taskBarIcon, wxTaskBarIcon)
+    EVT_MENU(menuShowMWBtnId, taskBarIcon::OnMenuEvent)
+    EVT_MENU(menuQuitBtnId, taskBarIcon::OnMenuEvent)
+    EVT_TASKBAR_LEFT_DCLICK(taskBarIcon::OnLeftDClick)
 wxEND_EVENT_TABLE();
 // clang-format on
 
@@ -176,8 +213,8 @@ mainWindow::mainWindow(const wxString& title)
     this->SetBackgroundStyle(wxBackgroundStyle::wxBG_STYLE_SYSTEM);
 #pragma region toolbar
     wxToolBar* toolBar = CreateToolBar(wxTB_TEXT | wxTB_NOICONS);
+    this->m_toolBar = toolBar;
 #pragma region openCfg
-    constexpr int toolBarItemOpenCfgID = 0x6767;
     toolBar->AddTool(toolBarItemOpenCfgID, _("toolbar.open_config"),
                      wxNullBitmap);
     Bind(wxEVT_MENU, &mainWindow::openConfigDir, this, toolBarItemOpenCfgID);
@@ -185,9 +222,22 @@ mainWindow::mainWindow(const wxString& title)
 #pragma region quit
     // MSW sign-extends toolbar WM_COMMAND ids to signed short, so ids must be
     // < 0x8000 (classic hex words like 0xcafe don't fit; 0x5eed does)
-    constexpr int toolBarItemQuitId = 011 + 45 + 14;
     toolBar->AddTool(toolBarItemQuitId, _("toolbar.quit"), wxNullBitmap);
     Bind(wxEVT_MENU, &mainWindow::onQuit, this, toolBarItemQuitId);
+#pragma endregion
+#pragma region language
+    // language switch: a wxChoice whose selection maps 1:1 onto langTable[].
+    // Changing it re-initializes the locale immediately (no restart needed);
+    // the tray menu and editor dialog are rebuilt on demand and pick up the
+    // new language automatically, while refreshLanguage() re-renders the
+    // toolbar and grid that are already on screen.
+    auto langChoice = new wxChoice(toolBar, toolBarItemLanguageId);
+    for (const auto& l : langTable)
+        langChoice->Append(wxString::FromUTF8(l.label));
+    const int cur = langCfgToIndex(ui_language);
+    langChoice->SetSelection(cur < 0 ? 0 : cur);
+    toolBar->AddControl(langChoice, _("toolbar.language"));
+    langChoice->Bind(wxEVT_CHOICE, &mainWindow::onLanguageSelected, this);
 #pragma endregion
     toolBar->Realize();
 #pragma endregion
@@ -197,6 +247,7 @@ mainWindow::mainWindow(const wxString& title)
     wxGrid* macroViewer =
         new wxGrid(this, macroViewerId, wxDefaultPosition, wxDefaultSize,
                    wxWANTS_CHARS, "macroViewer");
+    this->m_macroViewer = macroViewer;
     macroViewer->CreateGrid(keys_properties.size(), 3);
     // hide the row-label column (the 1,2,3... on the left)
     macroViewer->SetRowLabelSize(0);
@@ -283,9 +334,9 @@ mainWindow::mainWindow(const wxString& title)
 #pragma endregion
 
 #pragma region tray
-    // NOTE: must create the DERIVED MyTaskBarIcon (not wxTaskBarIcon) so the
+    // NOTE: must create the DERIVED taskBarIcon (not wxTaskBarIcon) so the
     // CreatePopupMenu() override and the event table take effect.
-    this->tray = new MyTaskBarIcon(this);
+    this->tray = new taskBarIcon(this);
 
     // Register image handlers BEFORE loading the PNG: wxWidgets ships with
     // zero handlers by default, so wxImage::LoadFile() would fail with
@@ -347,6 +398,64 @@ mainWindow::~mainWindow() {
 }
 
 void mainWindow::onQuit(wxCommandEvent&) { this->requestQuit(); }
+
+void mainWindow::onLanguageSelected(wxCommandEvent& ev) {
+    const int sel = ev.GetSelection();
+    if (sel < 0 || sel >= static_cast<int>(std::size(langTable))) return;
+    // switch the runtime locale first (every `_()` call from now on returns
+    // the new language), then persist the choice and re-render the controls
+    // that are already on screen.
+    wxGetApp().setLanguage(langTable[sel].language);
+    ui_language = langTable[sel].cfg;
+    try {
+        flash_into_config();
+    } catch (const std::exception& e) {
+        log_msg("moused: failed to persist language choice: %s\n", e.what());
+    }
+    this->refreshLanguage();
+}
+
+void mainWindow::refreshLanguage() {
+    // toolbar buttons + the language control's own label. MSW's SetLabel()
+    // re-realizes the native toolbar automatically when the text changed.
+    if (this->m_toolBar) {
+        if (wxToolBarToolBase* tool =
+                this->m_toolBar->FindById(toolBarItemOpenCfgID))
+            tool->SetLabel(_("toolbar.open_config"));
+        if (wxToolBarToolBase* tool =
+                this->m_toolBar->FindById(toolBarItemQuitId))
+            tool->SetLabel(_("toolbar.quit"));
+        if (wxToolBarToolBase* tool =
+                this->m_toolBar->FindById(toolBarItemLanguageId))
+            tool->SetLabel(_("toolbar.language"));
+    }
+    // grid column headers + the "edit" button cells
+    if (this->m_macroViewer) {
+        this->m_macroViewer->SetColLabelValue(0, _("macroViewer.enabledCol"));
+        this->m_macroViewer->SetColLabelValue(1, _("macroViewer.keyCol"));
+        this->m_macroViewer->SetColLabelValue(2, _("macroViewer.editCol"));
+        for (int i = 0; i < this->m_macroViewer->GetNumberRows(); ++i)
+            this->m_macroViewer->SetCellValue(i, 2, _("macroView.editBtn"));
+    }
+}
+
+// --- language / locale switching ---------------------------------------------
+
+void moused::setLanguage(int language) {
+    // wxLocale can only be Init()'d once per object, so switch languages by
+    // replacing the object wholesale: its dtor restores the previous locale,
+    // then the new one takes over and loads the catalog for the new language.
+    m_locale.reset();
+    m_locale =
+        std::make_unique<wxLocale>(language, wxLOCALE_DONT_LOAD_DEFAULT);
+    m_locale->AddCatalog("moused");
+}
+
+void moused::applyConfigLanguage() {
+    // "system" is exactly what OnInit() already set up (wxLANGUAGE_DEFAULT)
+    if (ui_language.empty() || ui_language == "system") return;
+    this->setLanguage(langCfgToWxLanguage(ui_language));
+}
 
 void mainWindow::onClose(wxCloseEvent& ev) {
     if (this->m_quitting) {

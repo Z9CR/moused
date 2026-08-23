@@ -50,6 +50,10 @@ msgstr ""
 msgid "toolbar.quit"
 msgstr ""
 
+#: src/ui.cpp:196
+msgid "toolbar.language"
+msgstr ""
+
 #: src/ui.cpp:238
 msgid "macroViewer.enabledCol"
 msgstr ""

@@ -73,6 +73,10 @@ extern int smoothmv_frametime;
 // without showing the main window
 extern bool silent_launch;
 
+// parsed from [global].language: "system" (follow the OS UI language),
+// "en_US", "zh_CN", ... — the values must match langTable in src/ui.cpp.
+extern std::string ui_language;
+
 extern std::vector<key_property> keys_properties;
 
 // utils

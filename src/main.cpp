@@ -27,11 +27,12 @@ bool moused::OnInit() {
     // executable (the build deploys it there; see CMakeLists.txt). `_()` falls
     // back to the original string when a catalog/translation is missing, so a
     // missing .mo is never fatal.
-    m_locale.Init(wxLANGUAGE_DEFAULT, wxLOCALE_DONT_LOAD_DEFAULT);
+    m_locale = std::make_unique<wxLocale>(wxLANGUAGE_DEFAULT,
+                                          wxLOCALE_DONT_LOAD_DEFAULT);
     wxFileTranslationsLoader::AddCatalogLookupPathPrefix(
         wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) +
         wxFILE_SEP_PATH + "locale");
-    m_locale.AddCatalog("moused");
+    m_locale->AddCatalog("moused");
 
     try {
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || \
@@ -59,6 +60,10 @@ bool moused::OnInit() {
         mkdirs(platform_cfg_dir);
         touch_config_file(platform_cfg_dir, config_name);
         read_from_config();
+
+        // i18n: apply the language persisted in [global].language (defaults
+        // to following the system UI language).
+        applyConfigLanguage();
 
         // register every enabled macro into the runtime macro manager
         warmup_macros();

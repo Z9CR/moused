@@ -181,6 +181,10 @@ int mainwindow_max_height = 0;
 // the main window
 bool silent_launch = true;
 
+// parsed from [global].language; "system" (follow the OS UI language),
+// "en_US", "zh_CN", ... — values must match langTable in src/ui.cpp
+std::string ui_language{"system"};
+
 // global config directory path, static lifetime
 std::string platform_cfg_dir;
 
@@ -310,6 +314,7 @@ void flash_into_config() {
     conf["global"]["max_window_width"] = mainwindow_max_width;
     conf["global"]["max_window_height"] = mainwindow_max_height;
     conf["global"]["silent_launch"] = silent_launch;
+    conf["global"]["language"] = ui_language;
 
     // gen keyboard::keys -> string name map (mirrors read_from_config)
     // `keys = [...]` in config stores *names* (["LEFT_CONTROL","L"]), not enum
@@ -397,6 +402,7 @@ void read_from_config() {
     // fallbacks
     smoothmv_frametime = 4;
     silent_launch = false;
+    ui_language = "system";
     keys_properties.clear();
     if (_props.is_empty()) return;
     const auto& props = _props.as_table();
@@ -423,6 +429,8 @@ void read_from_config() {
             mainwindow_max_height =
                 static_cast<int>(toml::find_or(val, "max_window_height", 0));
             silent_launch = toml::find_or(val, "silent_launch", false);
+            ui_language =
+                toml::find_or(val, "language", std::string("system"));
             continue;
         }
         // every profile of a key should be a table
