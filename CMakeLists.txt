@@ -23,6 +23,45 @@ elseif(BSD)
     set(PLATFORM_SOURCES src/bsd.cpp src/polkit_utils.cpp)
 endif()
 
+if(NOT WIN32)
+function(auto_set_pkg_config_path)
+  # read env(may null)
+    set(current_pkg_config_path $ENV{PKG_CONFIG_PATH})
+    if(current_pkg_config_path)
+        string(REPLACE ":" ";" current_list "${current_pkg_config_path}")
+    else()
+        set(current_list "")
+    endif()
+
+    set(candidate_dirs
+        "/usr/local/lib/pkgconfig"
+        "/usr/local/share/pkgconfig"
+        "/opt/homebrew/lib/pkgconfig"          # macOS Apple Silicon
+        "/usr/lib/x86_64-linux-gnu/pkgconfig"  # Debian/Ubuntu multiarch
+        "/usr/lib/pkgconfig"
+        "/usr/share/pkgconfig"
+        "/usr/local/libdata/pkgconfig"         # bsd
+    )
+
+    # convert2CMake's List
+    foreach(dir ${candidate_dirs})
+        if(IS_DIRECTORY "${dir}")
+            list(FIND current_list "${dir}" _idx)
+            if(_idx EQUAL -1)
+                list(APPEND current_list "${dir}")
+                message(STATUS "Adding to PKG_CONFIG_PATH: ${dir}")
+            endif()
+        endif()
+    endforeach()
+
+    string(REPLACE ";" ":" new_path "${current_list}")
+    set(ENV{PKG_CONFIG_PATH} "${new_path}")
+    message(STATUS "PKG_CONFIG_PATH set to: $ENV{PKG_CONFIG_PATH}")
+endfunction()
+
+auto_set_pkg_config_path()
+endif()
+
 include(FetchContent)
 
 # ---- embed the tray icon PNG directly into the binary ----
@@ -64,6 +103,7 @@ FetchContent_Declare(
     toml11
     GIT_REPOSITORY https://github.com/ToruNiina/toml11.git
     GIT_TAG v4.4.0
+    GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(toml11)
 
@@ -72,6 +112,7 @@ FetchContent_Declare(
     wx
     GIT_REPOSITORY https://github.com/wxWidgets/wxWidgets
     GIT_TAG v3.3.3
+    GIT_SHALLOW TRUE
 )
 # set compilation of `wxWidget` as `Static` force in case `DLL`(or SO) linking err
 set(wxBUILD_SHARED OFF CACHE BOOL "" FORCE)
