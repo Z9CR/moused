@@ -116,6 +116,9 @@ FetchContent_Declare(
 )
 # set compilation of `wxWidget` as `Static` force in case `DLL`(or SO) linking err
 set(wxBUILD_SHARED OFF CACHE BOOL "" FORCE)
+# specify force lnk /usr/bin/lib for BSD
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/usr/local/lib" CACHE STRING "" FORCE)
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L/usr/local/lib" CACHE STRING "" FORCE)
 
 if(APPLE)
     # wxWidgets 3.3.3 + the current macOS SDK: building wx with C++20 or
@@ -148,14 +151,15 @@ target_include_directories(moused PRIVATE ${INCLUDES_DIR} ${GENERATED_DIR})
 target_link_libraries(moused PRIVATE toml11::toml11)
 target_link_libraries(moused PRIVATE wx::core wx::base)
 
-if(APPLE)
+if(UNIX)
+  if(APPLE)
     # mac backend uses CoreGraphics (CGEvent*) and ApplicationServices
     # (AXIsProcessTrusted) to synthesize input & check Accessibility
     target_link_libraries(moused PRIVATE
         "-framework CoreGraphics"
         "-framework ApplicationServices")
-
-    # Apple's libc++ hides std::jthread / std::stop_token (used by
+  endif()
+    # Apple&BSDs' libc++ hides std::jthread / std::stop_token (used by
     # main.cpp, macro.cpp, macro_manager.cpp) unless this macro is defined
     # on libc++ they are still gated as "incomplete experimental" features.
     target_compile_definitions(moused PRIVATE _LIBCPP_ENABLE_EXPERIMENTAL)
