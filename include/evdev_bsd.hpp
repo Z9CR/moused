@@ -21,13 +21,28 @@
 #define EVIOCGBIT(type, len) _IOC(IOC_OUT, 'E', 0x20 + (type), len)
 #define EVIOCGKEY(len)       _IOC(IOC_OUT, 'E', 0x18, len)
 
-// ---- uinput ioctls (sys/dev/evdev/uinput.h, Linux-compatible) ----
-#define UI_DEV_CREATE   _IO('U', 1)
-#define UI_DEV_DESTROY  _IO('U', 2)
-#define UI_SET_EVBIT    _IOW('U', 100, int)
-#define UI_SET_KEYBIT   _IOW('U', 101, int)
-#define UI_SET_RELBIT   _IOW('U', 102, int)
-#define UI_DEV_SETUP    _IOW('U', 108, struct uinput_setup)
+// ---- uinput ioctls (sys/dev/evdev/uinput.h) ----
+#if defined(__FreeBSD__)
+// FreeBSD's uinput is Linux-compatible in spirit but uses FreeBSD's own
+// ioctl encoding (see sys/dev/evdev/uinput.h):
+//   - the bit-set ioctls are _IOWINT (IOC_VOID + sizeof(int)), not _IOW
+//   - UI_DEV_SETUP is command 3 (Linux uses 109 here — do NOT copy Linux)
+#define UI_DEV_CREATE  _IO('U', 1)
+#define UI_DEV_DESTROY _IO('U', 2)
+#define UI_DEV_SETUP   _IOW('U', 3, struct uinput_setup)
+#define UI_SET_EVBIT   _IOWINT('U', 100)
+#define UI_SET_KEYBIT  _IOWINT('U', 101)
+#define UI_SET_RELBIT  _IOWINT('U', 102)
+#else
+// DragonFly has no uinput device; these ioctls are never used there but
+// must remain defined for the shared header.
+#define UI_DEV_CREATE  _IO('U', 1)
+#define UI_DEV_DESTROY _IO('U', 2)
+#define UI_DEV_SETUP   _IOW('U', 3, struct uinput_setup)
+#define UI_SET_EVBIT   _IOWINT('U', 100)
+#define UI_SET_KEYBIT  _IOWINT('U', 101)
+#define UI_SET_RELBIT  _IOWINT('U', 102)
+#endif
 
 // ---- event types / sync (input-event-codes.h) ----
 #define EV_SYN 0x00
@@ -69,11 +84,21 @@ struct input_id {
     uint16_t version;
 };
 
+// ---- uinput wire layout (uinput.h) ----
+// WARNING: FreeBSD and Linux disagree on the field order of uinput_setup.
+#if defined(__FreeBSD__)
 struct uinput_setup {
-    char name[80];  // UINPUT_MAX_NAME_SIZE
+    struct input_id id;  // FreeBSD: id comes FIRST
+    char name[80];       // UINPUT_MAX_NAME_SIZE
+    uint32_t ff_effects_max;
+};
+#else
+struct uinput_setup {
+    char name[80];       // Linux/DragonFly layout (name first)
     struct input_id id;
     uint32_t ff_effects_max;
 };
+#endif
 
 // ---- evdev key codes (input-event-codes.h) ----
 // The subset referenced by evdev_keys_map.hpp; values identical on

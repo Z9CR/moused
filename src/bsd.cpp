@@ -49,6 +49,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cerrno>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -139,29 +140,31 @@ bool platform_uinput_setup() {
 
     g_mouse_fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
     if (g_mouse_fd < 0) {
-        log_msg("moused: cannot open /dev/uinput (need root; the GENERIC "
-                "FreeBSD kernel ships `device uinput`, so on a custom "
-                "kernel make sure it is present). Run with sudo or as "
-                "root.\n");
+        log_msg("moused: cannot open /dev/uinput (%s). On FreeBSD the "
+                "GENERIC kernel ships `device uinput`; on a custom kernel "
+                "make sure it is present. Run with sudo or as root.\n",
+                strerror(errno));
         return false;
     }
 
-    // event types the virtual mouse can emit
-    ioctl(g_mouse_fd, UI_SET_EVBIT, EV_KEY);
-    ioctl(g_mouse_fd, UI_SET_EVBIT, EV_REL);
-    ioctl(g_mouse_fd, UI_SET_EVBIT, EV_SYN);
-
-    // mouse buttons (LMB / RMB / MMB + two side buttons)
-    ioctl(g_mouse_fd, UI_SET_KEYBIT, BTN_LEFT);
-    ioctl(g_mouse_fd, UI_SET_KEYBIT, BTN_RIGHT);
-    ioctl(g_mouse_fd, UI_SET_KEYBIT, BTN_MIDDLE);
-    ioctl(g_mouse_fd, UI_SET_KEYBIT, BTN_SIDE);
-    ioctl(g_mouse_fd, UI_SET_KEYBIT, BTN_EXTRA);
-
-    // relative axes (pointer movement + wheel)
-    ioctl(g_mouse_fd, UI_SET_RELBIT, REL_X);
-    ioctl(g_mouse_fd, UI_SET_RELBIT, REL_Y);
-    ioctl(g_mouse_fd, UI_SET_RELBIT, REL_WHEEL);
+    // event types the virtual mouse can emit (check every capability ioctl:
+    // a wrong command encoding here silently yields EINVAL and the later
+    // UI_DEV_CREATE would be rejected)
+    if (ioctl(g_mouse_fd, UI_SET_EVBIT, EV_KEY) < 0 ||
+        ioctl(g_mouse_fd, UI_SET_EVBIT, EV_REL) < 0 ||
+        ioctl(g_mouse_fd, UI_SET_EVBIT, EV_SYN) < 0 ||
+        ioctl(g_mouse_fd, UI_SET_KEYBIT, BTN_LEFT) < 0 ||
+        ioctl(g_mouse_fd, UI_SET_KEYBIT, BTN_RIGHT) < 0 ||
+        ioctl(g_mouse_fd, UI_SET_KEYBIT, BTN_MIDDLE) < 0 ||
+        ioctl(g_mouse_fd, UI_SET_KEYBIT, BTN_SIDE) < 0 ||
+        ioctl(g_mouse_fd, UI_SET_KEYBIT, BTN_EXTRA) < 0 ||
+        ioctl(g_mouse_fd, UI_SET_RELBIT, REL_X) < 0 ||
+        ioctl(g_mouse_fd, UI_SET_RELBIT, REL_Y) < 0 ||
+        ioctl(g_mouse_fd, UI_SET_RELBIT, REL_WHEEL) < 0) {
+        log_msg("moused: uinput capability ioctl failed: %s\n",
+                strerror(errno));
+        goto fail;
+    }
 
     // create a virtual mouse named "moused" (same fake identity as the
     // Linux backend)
@@ -172,17 +175,23 @@ bool platform_uinput_setup() {
     usetup.id.vendor = 0x1145;
     usetup.id.product = 0x1919 + 810;
     usetup.id.version = 0x114 + 514;
-    ioctl(g_mouse_fd, UI_DEV_SETUP, &usetup);
+    if (ioctl(g_mouse_fd, UI_DEV_SETUP, &usetup) < 0) {
+        log_msg("moused: uinput UI_DEV_SETUP failed: %s\n", strerror(errno));
+        goto fail;
+    }
 
     if (ioctl(g_mouse_fd, UI_DEV_CREATE) < 0) {
-        log_msg("moused: UI_DEV_CREATE failed\n");
-        close(g_mouse_fd);
-        g_mouse_fd = -1;
-        return false;
+        log_msg("moused: uinput UI_DEV_CREATE failed: %s\n", strerror(errno));
+        goto fail;
     }
 
     atexit(uinput_cleanup);
     return true;
+
+fail:
+    close(g_mouse_fd);
+    g_mouse_fd = -1;
+    return false;
 }
 
 // ---- FreeBSD keyboard capture (evdev, Linux-compatible) ----

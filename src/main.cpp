@@ -50,12 +50,21 @@ bool moused::OnInit() {
                 "is the uinput kernel module loaded? On OpenBSD/NetBSD is "
                 "the wscons mouse mux available, on DragonFly an evdev REL "
                 "mouse device (run with doas/sudo)?");
-#if defined(__linux__) || defined(__FreeBSD__)
+#if defined(__linux__)
+        // Linux: evdev is guaranteed on a stock desktop kernel, so a failed
+        // keyboard capture is fatal.
         if (!platform_keyboard_capture_setup())
             throw std::runtime_error(
                 "failed to initialize keyboard event device. Is "
                 "the input kernel module loaded?");
-
+#else
+        // FreeBSD: same evdev EVIOCGKEY capture as Linux, but best-effort
+        // like OpenBSD/NetBSD/DragonFly — a missing /dev/input/event*
+        // keyboard node (e.g. a PS/2-only setup) must not keep the GUI
+        // from starting.
+        if (!platform_keyboard_capture_setup())
+            log_msg("moused: continuing without hotkey capture\n");
+#endif
         // Drop root so GUI runs under the original user's display session
         polkit_drop_privileges();
 #else
