@@ -75,7 +75,6 @@ bool moused::OnInit() {
         if (!platform_keyboard_capture_setup())
             log_msg("moused: continuing without hotkey capture\n");
 #endif
-#endif
         // run uni init
         // errs were catched by `try`
         init_cfg_dir_properties();
