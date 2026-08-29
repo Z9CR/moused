@@ -147,6 +147,10 @@ bool platform_uinput_setup() {
         return false;
     }
 
+    // virtual-mouse identity (declared before any goto so the error paths
+    // cannot jump past its initialization)
+    uinput_setup usetup{};
+
     // event types the virtual mouse can emit (check every capability ioctl:
     // a wrong command encoding here silently yields EINVAL and the later
     // UI_DEV_CREATE would be rejected)
@@ -168,7 +172,6 @@ bool platform_uinput_setup() {
 
     // create a virtual mouse named "moused" (same fake identity as the
     // Linux backend)
-    uinput_setup usetup{};
     memset(&usetup, 0, sizeof(usetup));
     snprintf(usetup.name, sizeof(usetup.name), "moused");
     usetup.id.bustype = BUS_USB;
