@@ -20,7 +20,27 @@ elseif(APPLE)
 elseif(LINUX)
     set(PLATFORM_SOURCES src/linux.cpp src/polkit_utils.cpp)
 elseif(BSD)
-    set(PLATFORM_SOURCES src/bsd.cpp src/polkit_utils.cpp)
+    # BSD backend lives in src/bsd.cpp. Only FreeBSD elevates via polkit
+    # (it needs root for /dev/uinput); OpenBSD/NetBSD use the wscons mux
+    # and are launched with doas/sudo directly.
+    set(PLATFORM_SOURCES src/bsd.cpp)
+    if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+        list(APPEND PLATFORM_SOURCES src/polkit_utils.cpp)
+    endif()
+    # std::jthread/std::stop_token (main.cpp, macro*.cpp, bsd.cpp) need a
+    # C++20-capable standard library. NetBSD's base gcc (e.g. 10.5) ships a
+    # libstdc++ without std::jthread, so fail up front with a clear message
+    # instead of a wall of template errors. Use base/pkgsrc clang (libc++) or
+    # lang/gcc12+ (libstdc++) — see BUILD_SUGGESTION.md.
+    if(CMAKE_SYSTEM_NAME STREQUAL "NetBSD")
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND
+           CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12)
+            message(FATAL_ERROR
+                "NetBSD's base gcc ${CMAKE_CXX_COMPILER_VERSION} has no "
+                "std::jthread. Build with a C++20-capable compiler, e.g. "
+                "CC=clang CXX=clang++ cmake .. (see BUILD_SUGGESTION.md).")
+        endif()
+    endif()
 endif()
 
 if(NOT WIN32)
@@ -163,6 +183,13 @@ if(UNIX)
     # main.cpp, macro.cpp, macro_manager.cpp) unless this macro is defined
     # on libc++ they are still gated as "incomplete experimental" features.
     target_compile_definitions(moused PRIVATE _LIBCPP_ENABLE_EXPERIMENTAL)
+endif()
+
+# std::jthread (main.cpp/macro.cpp/macro_manager.cpp and the BSD backend's
+# wskbd reader thread) needs real pthread support on the BSDs.
+if(NOT WIN32)
+    find_package(Threads REQUIRED)
+    target_link_libraries(moused PRIVATE Threads::Threads)
 endif()
 
 if(APPLE)

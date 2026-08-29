@@ -1,8 +1,7 @@
 #include <polkit_utils.hpp>
 #include <utils.hpp>
 // avoid errors on win
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || \
-    defined(__OpenBSD__) || defined(__DragonFly__)
+#if defined(__linux__) || defined(__FreeBSD__)
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
@@ -17,7 +16,7 @@
 #include <system_error>
 
 /// find absolute path of current executable
-/// on Linux uses /proc/self/exe, on BSDs uses realpath(argv[0])
+/// on Linux uses /proc/self/exe, on FreeBSD uses realpath(argv[0])
 /// unix & unix-likes only!
 static std::string get_exe_path(const char* argv0) {
     char path[PATH_MAX];
@@ -30,14 +29,13 @@ static std::string get_exe_path(const char* argv0) {
         return std::string(path);
     }
 #endif
-    // BSDs / fallback: resolve argv[0]
+    // FreeBSD / fallback: resolve argv[0]
     if (realpath(argv0, path)) return std::string(path);
 
     return std::string(argv0);  // last resort
 }
 
-// the program must have privilege in Linux and BSDs to RW /dev/uinput(Linux) or
-// /dev/wsmouse(BSDs)
+// the program must have privilege in Linux and FreeBSD to RW /dev/uinput
 void polkit_root_getter(int argc, char* argv[]) {
     if (geteuid() != 0) {
         // We are a normal user. Save the display environment and then

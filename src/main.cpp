@@ -37,15 +37,20 @@ bool moused::OnInit() {
     try {
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || \
     defined(__OpenBSD__) || defined(__DragonFly__)
-        // Elevation happens in main() BEFORE wxEntry/GTK init: the pkexec
-        // re-exec'd root process needs the display env restored from the
-        // envfile, and gtk_init_check() runs before OnInit().
-        // Open /dev/uinput while we are still root — the fd stays valid
-        // even after we drop privileges.
+        // Linux & FreeBSD elevate in main() BEFORE wxEntry/GTK init via
+        // pkexec (the re-exec'd root process needs the display env restored
+        // from the envfile before gtk_init_check()). OpenBSD/NetBSD/DragonFly
+        // have no reliable polkit/pkexec, so there the user launches the app
+        // with doas/sudo directly. On Linux & FreeBSD /dev/uinput is opened
+        // while still root — the fd stays valid even after we drop
+        // privileges.
         if (!platform_uinput_setup())
             throw std::runtime_error(
-                "failed to initialize uinput device. Is the "
-                "uinput kernel module loaded?");
+                "failed to initialize the input device. On Linux/FreeBSD "
+                "is the uinput kernel module loaded? On OpenBSD/NetBSD is "
+                "the wscons mouse mux available, on DragonFly an evdev REL "
+                "mouse device (run with doas/sudo)?");
+#if defined(__linux__) || defined(__FreeBSD__)
         if (!platform_keyboard_capture_setup())
             throw std::runtime_error(
                 "failed to initialize keyboard event device. Is "
@@ -53,6 +58,14 @@ bool moused::OnInit() {
 
         // Drop root so GUI runs under the original user's display session
         polkit_drop_privileges();
+#else
+        // OpenBSD/NetBSD: wscons exposes no key-state query to a second
+        // process while the window system owns the keyboard; DragonFly can
+        // have an evdev-less kernel. Keyboard capture is best-effort on all
+        // three — a failure is logged, not fatal.
+        if (!platform_keyboard_capture_setup())
+            log_msg("moused: continuing without hotkey capture\n");
+#endif
 #endif
         // run uni init
         // errs were catched by `try`
@@ -166,12 +179,13 @@ int moused::OnExit() {
     return wxApp::OnExit();
 }
 
-// On Unix, elevate (via pkexec) BEFORE wxEntry: gtk_init_check() runs before
-// wxApp::OnInit(), so the env restore done in the root branch must happen
-// before GTK initializes, otherwise the pkexec-spawned root process dies with
-// "Unable to initialize GTK+" (empty DISPLAY/WAYLAND environment).
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || \
-    defined(__OpenBSD__) || defined(__DragonFly__)
+// On Linux & FreeBSD, elevate (via pkexec) BEFORE wxEntry: gtk_init_check()
+// runs before wxApp::OnInit(), so the env restore done in the root branch
+// must happen before GTK initializes, otherwise the pkexec-spawned root
+// process dies with "Unable to initialize GTK+" (empty DISPLAY/WAYLAND
+// environment). OpenBSD/NetBSD/DragonFly skip this: the user launches with
+// doas/sudo directly (no reliable polkit/pkexec there).
+#if defined(__linux__) || defined(__FreeBSD__)
 wxIMPLEMENT_APP_NO_MAIN(moused);
 
 int main(int argc, char* argv[]) {

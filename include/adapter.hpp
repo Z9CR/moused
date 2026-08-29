@@ -72,9 +72,13 @@ void wheel(wheel_rotations rotation, double scale);
 
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || \
     defined(__OpenBSD__) || defined(__DragonFly__)
-/// Initialize platform input device (/dev/uinput, /dev/wsmouse etc.)
-/// Must be called as root; after a successful call the fd stays valid
-/// even after dropping privileges via seteuid().
+/// Initialize the platform input device and keyboard capture. Backends:
+///   Linux/FreeBSD: /dev/uinput (virtual mouse) + /dev/input/event* evdev
+///                  (keyboard state via EVIOCGKEY). Must be called as root;
+///                  after a successful call the fd stays valid even after
+///                  dropping privileges via seteuid().
+///   OpenBSD/NetBSD: wscons mouse mux (/dev/wsmouse) via WSMUXIO_INJECTEVENT
+///                  + best-effort /dev/wskbd* keyboard capture.
 bool platform_uinput_setup();
 
 /// init keyboard capture prog to impl hotkey feat

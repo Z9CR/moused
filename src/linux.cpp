@@ -1,4 +1,4 @@
-﻿#include <dirent.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <linux/fb.h>
 #include <linux/input.h>
@@ -13,6 +13,7 @@
 #include <cstring>
 #include <macro_manager.hpp>
 #include <utils.hpp>
+#include <evdev_keys_map.hpp>
 
 #ifdef NULL
 #undef NULL  // Linux headers define NULL as `((void*)0)` (in C: __null, but
@@ -468,209 +469,10 @@ using keys = keyboard::keys;
 
 // map Linux input key codes to keys enum (mirrors Windows' vk2keys)
 static keys linux_keycode_to_keys(int code) {
-    // numbers row: KEY_1(2)..KEY_9(10), KEY_0(11)
-    if (code >= KEY_1 && code <= KEY_9)
-        return static_cast<keys>('1' + (code - KEY_1));
-    if (code == KEY_0) return keys::ZERO;
     switch (code) {
-        // letters — Linux key codes are NOT alphabetical, must map individually
-        case KEY_A:
-            return keys::A;
-        case KEY_B:
-            return keys::B;
-        case KEY_C:
-            return keys::C;
-        case KEY_D:
-            return keys::D;
-        case KEY_E:
-            return keys::E;
-        case KEY_F:
-            return keys::F;
-        case KEY_G:
-            return keys::G;
-        case KEY_H:
-            return keys::H;
-        case KEY_I:
-            return keys::I;
-        case KEY_J:
-            return keys::J;
-        case KEY_K:
-            return keys::K;
-        case KEY_L:
-            return keys::L;
-        case KEY_M:
-            return keys::M;
-        case KEY_N:
-            return keys::N;
-        case KEY_O:
-            return keys::O;
-        case KEY_P:
-            return keys::P;
-        case KEY_Q:
-            return keys::Q;
-        case KEY_R:
-            return keys::R;
-        case KEY_S:
-            return keys::S;
-        case KEY_T:
-            return keys::T;
-        case KEY_U:
-            return keys::U;
-        case KEY_V:
-            return keys::V;
-        case KEY_W:
-            return keys::W;
-        case KEY_X:
-            return keys::X;
-        case KEY_Y:
-            return keys::Y;
-        case KEY_Z:
-            return keys::Z;
-        // punctuation & editing
-        case KEY_MINUS:
-            return keys::MINUS;
-        case KEY_EQUAL:
-            return keys::EQUAL;
-        case KEY_BACKSPACE:
-            return keys::BACKSPACE;
-        case KEY_TAB:
-            return keys::TAB;
-        case KEY_LEFTBRACE:
-            return keys::LEFT_BRACKET;
-        case KEY_RIGHTBRACE:
-            return keys::RIGHT_BRACKET;
-        case KEY_ENTER:
-            return keys::ENTER;
-        case KEY_LEFTCTRL:
-            return keys::LEFT_CONTROL;
-        case KEY_SEMICOLON:
-            return keys::SEMICOLON;
-        case KEY_APOSTROPHE:
-            return keys::APOSTROPHE;
-        case KEY_GRAVE:
-            return keys::GRAVE;
-        case KEY_LEFTSHIFT:
-            return keys::LEFT_SHIFT;
-        case KEY_BACKSLASH:
-            return keys::BACKSLASH;
-        case KEY_COMMA:
-            return keys::COMMA;
-        case KEY_DOT:
-            return keys::PERIOD;
-        case KEY_SLASH:
-            return keys::SLASH;
-        case KEY_RIGHTSHIFT:
-            return keys::RIGHT_SHIFT;
-        case KEY_LEFTALT:
-            return keys::LEFT_ALT;
-        case KEY_SPACE:
-            return keys::SPACE;
-        case KEY_CAPSLOCK:
-            return keys::CAPS_LOCK;
-        // function keys
-        case KEY_F1:
-            return keys::F1;
-        case KEY_F2:
-            return keys::F2;
-        case KEY_F3:
-            return keys::F3;
-        case KEY_F4:
-            return keys::F4;
-        case KEY_F5:
-            return keys::F5;
-        case KEY_F6:
-            return keys::F6;
-        case KEY_F7:
-            return keys::F7;
-        case KEY_F8:
-            return keys::F8;
-        case KEY_F9:
-            return keys::F9;
-        case KEY_F10:
-            return keys::F10;
-        case KEY_F11:
-            return keys::F11;
-        case KEY_F12:
-            return keys::F12;
-        // navigation & locks
-        case KEY_ESC:
-            return keys::ESCAPE;
-        case KEY_INSERT:
-            return keys::INSERT;
-        case KEY_DELETE:
-            return keys::DELETE;
-        case KEY_RIGHT:
-            return keys::RIGHT;
-        case KEY_LEFT:
-            return keys::LEFT;
-        case KEY_DOWN:
-            return keys::DOWN;
-        case KEY_UP:
-            return keys::UP;
-        case KEY_PAGEUP:
-            return keys::PAGE_UP;
-        case KEY_PAGEDOWN:
-            return keys::PAGE_DOWN;
-        case KEY_HOME:
-            return keys::HOME;
-        case KEY_END:
-            return keys::END;
-        case KEY_SCROLLLOCK:
-            return keys::SCROLL_LOCK;
-        case KEY_NUMLOCK:
-            return keys::NUM_LOCK;
-        case KEY_SYSRQ:
-            return keys::PRINT_SCREEN;
-        case KEY_PAUSE:
-            return keys::PAUSE;
-        // right modifiers
-        case KEY_RIGHTCTRL:
-            return keys::RIGHT_CONTROL;
-        case KEY_RIGHTALT:
-            return keys::RIGHT_ALT;
-        case KEY_LEFTMETA:
-            return keys::LEFT_SUPER;
-        case KEY_RIGHTMETA:
-            return keys::RIGHT_SUPER;
-#ifdef KEY_MENU
-        case KEY_MENU:
-            return keys::KB_MENU;
-#endif
-        // keypad
-        case KEY_KP0:
-            return keys::KP_0;
-        case KEY_KP1:
-            return keys::KP_1;
-        case KEY_KP2:
-            return keys::KP_2;
-        case KEY_KP3:
-            return keys::KP_3;
-        case KEY_KP4:
-            return keys::KP_4;
-        case KEY_KP5:
-            return keys::KP_5;
-        case KEY_KP6:
-            return keys::KP_6;
-        case KEY_KP7:
-            return keys::KP_7;
-        case KEY_KP8:
-            return keys::KP_8;
-        case KEY_KP9:
-            return keys::KP_9;
-        case KEY_KPDOT:
-            return keys::KP_DECIMAL;
-        case KEY_KPSLASH:
-            return keys::KP_DIVIDE;
-        case KEY_KPASTERISK:
-            return keys::KP_MULTIPLY;
-        case KEY_KPMINUS:
-            return keys::KP_SUBTRACT;
-        case KEY_KPPLUS:
-            return keys::KP_ADD;
-        case KEY_KPENTER:
-            return keys::KP_ENTER;
-        case KEY_KPEQUAL:
-            return keys::KP_EQUAL;
+#define EVDEV_ITEM(kc, ks) case kc: return ks;
+        EVDEV_KEYS_LIST(EVDEV_ITEM)
+#undef EVDEV_ITEM
         default:
             break;
     }
@@ -680,113 +482,16 @@ static keys linux_keycode_to_keys(int code) {
 // reverse map: keys enum to Linux key code (mirrors Windows' is_key_pressed
 // reverse map)
 static int keys_to_linux_keycode(keys key) {
-    int val = static_cast<int>(key);
-
-    // numbers: '0'..'9' -> KEY_0..KEY_9
-    if (val >= '0' && val <= '9') return KEY_0 + (val - '0');
-    // letters — Linux key codes NOT alphabetical, must map individually
-    static const struct {
-        keys k;
-        int code;
-    } letter_table[] = {
-        {keys::A, KEY_A}, {keys::B, KEY_B}, {keys::C, KEY_C}, {keys::D, KEY_D},
-        {keys::E, KEY_E}, {keys::F, KEY_F}, {keys::G, KEY_G}, {keys::H, KEY_H},
-        {keys::I, KEY_I}, {keys::J, KEY_J}, {keys::K, KEY_K}, {keys::L, KEY_L},
-        {keys::M, KEY_M}, {keys::N, KEY_N}, {keys::O, KEY_O}, {keys::P, KEY_P},
-        {keys::Q, KEY_Q}, {keys::R, KEY_R}, {keys::S, KEY_S}, {keys::T, KEY_T},
-        {keys::U, KEY_U}, {keys::V, KEY_V}, {keys::W, KEY_W}, {keys::X, KEY_X},
-        {keys::Y, KEY_Y}, {keys::Z, KEY_Z},
-    };
-    for (auto& e : letter_table)
-        if (e.k == key) return e.code;
-
-    // ASCII punctuation
-    switch (val) {
-        case '\'':
-            return KEY_APOSTROPHE;
-        case ',':
-            return KEY_COMMA;
-        case '-':
-            return KEY_MINUS;
-        case '.':
-            return KEY_DOT;
-        case '/':
-            return KEY_SLASH;
-        case ';':
-            return KEY_SEMICOLON;
-        case '=':
-            return KEY_EQUAL;
-        case '[':
-            return KEY_LEFTBRACE;
-        case '\\':
-            return KEY_BACKSLASH;
-        case ']':
-            return KEY_RIGHTBRACE;
-        case ' ':
-            return KEY_SPACE;
-        case '`':
-            return KEY_GRAVE;
-        default:
-            break;
-    }
-
-    // F1–F12
-    if (val >= static_cast<int>(keys::F1) && val <= static_cast<int>(keys::F12))
-        return KEY_F1 + (val - static_cast<int>(keys::F1));
-
-    // keypad 0–9
-    if (val >= static_cast<int>(keys::KP_0) &&
-        val <= static_cast<int>(keys::KP_9))
-        return KEY_KP0 + (val - static_cast<int>(keys::KP_0));
-
-    // special keys — static table
     static const struct {
         keys k;
         int code;
     } table[] = {
-        {keys::ESCAPE, KEY_ESC},
-        {keys::ENTER, KEY_ENTER},
-        {keys::TAB, KEY_TAB},
-        {keys::BACKSPACE, KEY_BACKSPACE},
-        {keys::INSERT, KEY_INSERT},
-        {keys::DELETE, KEY_DELETE},
-        {keys::RIGHT, KEY_RIGHT},
-        {keys::LEFT, KEY_LEFT},
-        {keys::DOWN, KEY_DOWN},
-        {keys::UP, KEY_UP},
-        {keys::PAGE_UP, KEY_PAGEUP},
-        {keys::PAGE_DOWN, KEY_PAGEDOWN},
-        {keys::HOME, KEY_HOME},
-        {keys::END, KEY_END},
-        {keys::CAPS_LOCK, KEY_CAPSLOCK},
-        {keys::SCROLL_LOCK, KEY_SCROLLLOCK},
-        {keys::NUM_LOCK, KEY_NUMLOCK},
-        {keys::PRINT_SCREEN, KEY_SYSRQ},
-        {keys::PAUSE, KEY_PAUSE},
-        {keys::LEFT_SHIFT, KEY_LEFTSHIFT},
-        {keys::LEFT_CONTROL, KEY_LEFTCTRL},
-        {keys::LEFT_ALT, KEY_LEFTALT},
-        {keys::LEFT_SUPER, KEY_LEFTMETA},
-        {keys::RIGHT_SHIFT, KEY_RIGHTSHIFT},
-        {keys::RIGHT_CONTROL, KEY_RIGHTCTRL},
-        {keys::RIGHT_ALT, KEY_RIGHTALT},
-        {keys::RIGHT_SUPER, KEY_RIGHTMETA},
-#ifdef KEY_MENU
-        {keys::KB_MENU, KEY_MENU},
-#endif
-        // keypad
-        {keys::KP_DECIMAL, KEY_KPDOT},
-        {keys::KP_DIVIDE, KEY_KPSLASH},
-        {keys::KP_MULTIPLY, KEY_KPASTERISK},
-        {keys::KP_SUBTRACT, KEY_KPMINUS},
-        {keys::KP_ADD, KEY_KPPLUS},
-        {keys::KP_ENTER, KEY_KPENTER},
-        {keys::KP_EQUAL, KEY_KPEQUAL},
+#define EVDEV_ITEM(kc, ks) {ks, kc},
+        EVDEV_KEYS_LIST(EVDEV_ITEM)
+#undef EVDEV_ITEM
     };
-
     for (auto& e : table)
         if (e.k == key) return e.code;
-
     return -1;  // unmapped
 }
 
