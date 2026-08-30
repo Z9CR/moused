@@ -779,12 +779,9 @@ bool platform_keyboard_capture_setup() {
         if (fd < 0) continue;  // ENXIO: no device, EBUSY: in use by server
 
         // fetch the keymap so keycodes (event values) can be resolved to
-        // keys.  The two wscons families differ here: OpenBSD's
-        // WSKBDIO_GETMAP fills an array of struct wscons_keymap
-        // (group1[0] == unshifted keysym of each keycode), while NetBSD's
-        // fills a flat keysym_t array instead — so the buffer type and the
-        // per-keycode read differ per OS.
-#if defined(__OpenBSD__)
+        // keys.  Both OpenBSD and NetBSD's WSKBDIO_GETMAP fill an array of
+        // struct wscons_keymap (group1[0] == unshifted keysym of each
+        // keycode), so one code path serves both.
         static wscons_keymap map_buf[0x1000];
         wskbd_map_data md{};
         md.maplen = 0x1000;
@@ -802,25 +799,6 @@ bool platform_keyboard_capture_setup() {
             wskbd_keycode_to_keys[kc] =
                 (k == keys::NONE) ? -1 : static_cast<int>(k);
         }
-#else   // __NetBSD__
-        static keysym_t map_buf[0x1000];
-        wskbd_map_data md{};
-        md.maplen = 0x1000;
-        md.map = map_buf;
-        if (ioctl(fd, WSKBDIO_GETMAP, &md) < 0) {
-            close(fd);
-            continue;
-        }
-        int maplen = md.maplen;
-        if (maplen > 0x1000) maplen = 0x1000;
-        for (int kc = 0; kc < 0x1000; ++kc)
-            wskbd_keycode_to_keys[kc] = -1;
-        for (int kc = 0; kc < maplen; ++kc) {
-            keys k = wscons_ksym_to_keys(map_buf[kc]);
-            wskbd_keycode_to_keys[kc] =
-                (k == keys::NONE) ? -1 : static_cast<int>(k);
-        }
-#endif
 
         wskbd_fds[wskbd_count++] = fd;
     }
