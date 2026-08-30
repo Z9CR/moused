@@ -65,8 +65,10 @@ bool moused::OnInit() {
         if (!platform_keyboard_capture_setup())
             log_msg("moused: continuing without hotkey capture\n");
 #endif
+#if defined(__linux__) || defined(__FreeBSD__)
         // Drop root so GUI runs under the original user's display session
         polkit_drop_privileges();
+#endif
 #else
         // OpenBSD/NetBSD: wscons exposes no key-state query to a second
         // process while the window system owns the keyboard; DragonFly can
