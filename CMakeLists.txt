@@ -155,6 +155,14 @@ else()
     FetchContent_MakeAvailable(wx)
 endif()
 
+# wxWidgets 3.3.3's bundled nanosvg calls unqualified isnan() in
+# nsvg__clampf(); when bmpsvg.cpp compiles that header as C++ on NetBSD the
+# symbol is not in the global namespace (only std::isnan exists), so the build
+# fails inside nanosvgrast.h. Patch the vendored copy right after the download;
+# the script is idempotent and also fixes checkouts that predate this block.
+set(wx_src_dir "${wx_SOURCE_DIR}")
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/patch_wx_nanosvg_isnan.cmake)
+
 if(WIN32)
     # when use macro `wxIMPLEMENT_APP(MyApp)`, the enter func is `WinMain`,
     # but, MSVC expects enter func `main`, and theres no `main` inside, so we need to
