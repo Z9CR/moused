@@ -3,7 +3,7 @@
 #include <cctype>
 #include <config.hpp>
 #include <filesystem>
-#include <format>
+#include <fmt/format.h>
 #include <fstream>
 #include <macro_manager.hpp>
 #include <optional>
@@ -57,7 +57,7 @@ double parse_arg_name(const std::string& name) {
     for (const auto& e : arg_names)
         if (e.name == name) return e.value;
     throw std::runtime_error(
-        std::format("moused: unknown command argument `{}` in config file", name));
+        fmt::format("moused: unknown command argument `{}` in config file", name));
 }
 
 // convert a single `args` element (number or quoted name) to a double
@@ -93,7 +93,7 @@ macro_script parse_command_list(const toml::value& val) {
                 "moused: every instruction needs `cmd = 'name'`");
         auto cmd_type = command_type_from_string(it->second.as_string());
         if (!cmd_type)
-            throw std::runtime_error(std::format(
+            throw std::runtime_error(fmt::format(
                 "moused: unknown command `{}` in config file",
                 it->second.as_string()));
         command cmd;
@@ -363,17 +363,17 @@ void flash_into_config() {
     // (ui.cpp wraps flash_into_config() in try/catch to undo the toggle).
     std::ofstream of{cfg};
     if (!of) {
-        throw std::runtime_error(std::format(
+        throw std::runtime_error(fmt::format(
             "moused: failed to open config file `{}`", cfg.string()));
     }
     of << toml::format(conf);
     if (!of) {
-        throw std::runtime_error(std::format(
+        throw std::runtime_error(fmt::format(
             "moused: failed to write config file `{}`", cfg.string()));
     }
     of.close();
     if (!of) {
-        throw std::runtime_error(std::format(
+        throw std::runtime_error(fmt::format(
             "moused: failed to flush config file `{}`", cfg.string()));
     }
 }
@@ -435,7 +435,7 @@ void read_from_config() {
         }
         // every profile of a key should be a table
         if (!val.is_table()) {
-            throw std::runtime_error(std::format(
+            throw std::runtime_error(fmt::format(
                 "moused: error occurred when parsing config file `{}`",
                 cfg.string()));
         }
@@ -457,7 +457,7 @@ void read_from_config() {
 
         auto keys_it = key_profile.find("keys");
         if (keys_it == key_profile.end() || !keys_it->second.is_array()) {
-            throw std::runtime_error(std::format(
+            throw std::runtime_error(fmt::format(
                 "moused: section `{}` is missing the required `keys = "
                 "[...]` array in config file `{}`",
                 key, cfg.string()));
@@ -468,12 +468,12 @@ void read_from_config() {
             keyboard::keys k = name_to_key(n);
             if (k == keyboard::keys::NONE)
                 throw std::runtime_error(
-                    std::format("moused: unknown key `{}` in config file `{}`",
+                    fmt::format("moused: unknown key `{}` in config file `{}`",
                                 n, cfg.string()));
             _property.keys.push_back(k);
         }
         if (_property.keys.empty())
-            throw std::runtime_error(std::format(
+            throw std::runtime_error(fmt::format(
                 "moused: empty keys array in config file `{}`", cfg.string()));
         /*
         [key]
@@ -495,7 +495,7 @@ void read_from_config() {
         else if (type_str == "replay")
             _property.type = script_type::replay;
         else
-            throw std::runtime_error(std::format(
+            throw std::runtime_error(fmt::format(
                 "moused: unknown `type = '{}'` in section `{}` (expected "
                 "'inline' or 'replay')",
                 type_str, key));
@@ -503,7 +503,7 @@ void read_from_config() {
         // [key.onActive] (required)
         if (!key_profile.contains("onActive") ||
             !key_profile.at("onActive").is_table())
-            throw std::runtime_error(std::format(
+            throw std::runtime_error(fmt::format(
                 "moused: section `{}` is missing the required "
                 "`[<name>.onActive]` table",
                 key));
@@ -513,7 +513,7 @@ void read_from_config() {
         // [key.onInterrupt] (omittable)
         auto interrupt_it = key_profile.find("onInterrupt");
         if (interrupt_it != key_profile.end() && !interrupt_it->second.is_table())
-            throw std::runtime_error(std::format(
+            throw std::runtime_error(fmt::format(
                 "moused: `[<name>.onInterrupt]` in section `{}` must be a "
                 "table",
                 key));
@@ -533,7 +533,7 @@ void read_from_config() {
             // the (relative) replay path against the config dir and keep the
             // resolved path in `val`; actual replay execution is future work
             if (!on_active_val.is_string())
-                throw std::runtime_error(std::format(
+                throw std::runtime_error(fmt::format(
                     "moused: replay section `{}` needs `val = \"path to "
                     "replay file\"`",
                     key));

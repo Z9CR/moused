@@ -1,7 +1,7 @@
 #include <adapter.hpp>
 #include <algorithm>
 #include <config.hpp>
-#include <format>
+#include <fmt/format.h>
 #include <macro.hpp>
 #include <mutex>
 #include <optional>
@@ -33,7 +33,7 @@ double arg_at(const command& cmd, std::size_t i) {
 // name ('LMB', 'WU'), everything else as a number. The button and wheel
 // enums share values (LMB == WU == 0), so look up per command kind.
 std::string format_arg(command_type type, std::size_t index, double value) {
-    if (index != 0) return std::format("{:g}", value);
+    if (index != 0) return fmt::format("{:g}", value);
     const int int_val = static_cast<int>(value);
     switch (type) {
         case command_type::click:
@@ -63,7 +63,7 @@ std::string format_arg(command_type type, std::size_t index, double value) {
         default:
             break;
     }
-    return std::format("{:g}", value);
+    return fmt::format("{:g}", value);
 }
 }  // namespace
 
@@ -84,13 +84,13 @@ std::string format_macro_script(const macro_script& script) {
     for (std::size_t i = 0; i < script.size(); ++i) {
         const auto& cmd = script[i];
         if (i > 0) out += "\n";
-        out += std::format("{{ cmd = '{}', args = [",
+        out += fmt::format("{{ cmd = '{}', args = [",
                            command_type_to_string(cmd.type));
         for (std::size_t j = 0; j < cmd.args.size(); ++j) {
             if (j > 0) out += ", ";
             out += format_arg(cmd.type, j, cmd.args[j]);
         }
-        out += std::format("], delay = {:g} }}", cmd.delay);
+        out += fmt::format("], delay = {:g} }}", cmd.delay);
     }
     return out;
 }

@@ -127,6 +127,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(toml11)
 
+# lib {fmt} for NetBSD's g++ 12.5 which doesnt have format.h 
+FetchContent_Declare(
+    fmt
+    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+    GIT_TAG 12.2.0
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(fmt)
+
 # wxWidget
 FetchContent_Declare(
     wx
@@ -177,6 +186,7 @@ endif()
 
 target_include_directories(moused PRIVATE ${INCLUDES_DIR} ${GENERATED_DIR})
 target_link_libraries(moused PRIVATE toml11::toml11)
+target_link_libraries(moused PRIVATE fmt::fmt)
 target_link_libraries(moused PRIVATE wx::core wx::base)
 
 if(UNIX)
