@@ -60,6 +60,8 @@ function(auto_set_pkg_config_path)
         "/usr/lib/x86_64-linux-gnu/pkgconfig"  # Debian/Ubuntu multiarch
         "/usr/lib/pkgconfig"
         "/usr/share/pkgconfig"
+        "/usr/pkg/lib/pkgconfig"               # NetBSD/DragonFly pkgsrc
+        "/usr/pkg/share/pkgconfig"
         "/usr/local/libdata/pkgconfig"         # bsd
     )
 
@@ -145,9 +147,17 @@ FetchContent_Declare(
 )
 # set compilation of `wxWidget` as `Static` force in case `DLL`(or SO) linking err
 set(wxBUILD_SHARED OFF CACHE BOOL "" FORCE)
-# specify force lnk /usr/bin/lib for BSD
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/usr/local/lib" CACHE STRING "" FORCE)
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L/usr/local/lib" CACHE STRING "" FORCE)
+# specify force lnk lib path for BSD — the package prefix differs per family:
+# FreeBSD & OpenBSD package into /usr/local, NetBSD & DragonFly (pkgsrc) into
+# /usr/pkg. Without the right -L the final executable links (wxrc, moused)
+# can't find glib/gtk and die with "ld: cannot find -lglib-2.0".
+if(CMAKE_SYSTEM_NAME MATCHES "NetBSD|DragonFly")
+    set(_moused_bsd_libdir "/usr/pkg/lib")
+else()
+    set(_moused_bsd_libdir "/usr/local/lib")
+endif()
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${_moused_bsd_libdir}" CACHE STRING "" FORCE)
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L${_moused_bsd_libdir}" CACHE STRING "" FORCE)
 
 if(APPLE)
     # wxWidgets 3.3.3 + the current macOS SDK: building wx with C++20 or
