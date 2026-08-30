@@ -171,6 +171,7 @@ endif()
 # the script is idempotent and also fixes checkouts that predate this block.
 set(wx_src_dir "${wx_SOURCE_DIR}")
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/patch_wx_nanosvg_isnan.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/patch_wx_sckaddr_netbsd.cmake)
 
 if(WIN32)
     # when use macro `wxIMPLEMENT_APP(MyApp)`, the enter func is `WinMain`,
